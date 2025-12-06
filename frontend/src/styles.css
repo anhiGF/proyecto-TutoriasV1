@@ -40,6 +40,12 @@ a {
   border-bottom: 1px solid #e0e0e0;
 }
 
+.app-header-nav {
+  display: flex;          
+  align-items: center;
+  gap: 1.5rem;           
+}
+
 .app-logo {
   font-weight: 700;
   color: var(--color-primary);
@@ -48,6 +54,17 @@ a {
 .app-nav {
   display: flex;
   gap: 1rem;
+}
+/*Menu*/
+.nav-link {
+  text-decoration: none;
+  color: #444;
+  font-weight: 500;
+}
+
+.nav-link.active,
+.nav-link:hover {
+  color: #e57373;
 }
 
 .app-nav a {
@@ -232,4 +249,48 @@ a {
 
 .modal-warning {
   border-top: 4px solid #ff9800;
+}
+/*bolita de riesgo*/
+.badge-risk {
+  margin-left: 0.35rem;
+  font-size: 1.1rem;
+  vertical-align: middle;
+}
+
+/*riesgos tabs*/
+.tabs {
+  display: flex;
+  gap: 1.5rem;
+  border-bottom: 1px solid #eee;
+  margin-top: 1.5rem;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 0.5rem 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  position: relative;
+}
+
+.tab:hover {
+  color: #e57373;
+}
+
+.tab-active {
+  color: #e57373;
+}
+
+.tab-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 2px;
+  background: #e57373;
+  border-radius: 999px;
 }

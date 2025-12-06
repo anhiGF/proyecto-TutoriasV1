@@ -1,6 +1,6 @@
 // src/pages/Canalizaciones/CanalizacionDetailPage.jsx
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { mockCanalizaciones } from '../../mock/canalizaciones.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 
@@ -9,9 +9,16 @@ export function CanalizacionDetailPage({ mode = 'view' }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const role = user?.role ?? '';
-
+  const location = useLocation();
   const isCreate = mode === 'create';
   const isView = mode === 'view';
+  const prefilledStudent = location.state?.estudianteId
+      ? {
+          id: location.state.estudianteId,
+          nombre: location.state.estudianteNombre,
+          carrera: location.state.estudianteCarrera || '',
+        }
+      : null;
 
   // Estado inicial: si es create, se arma la base; si es ver/editar, se busca en los mocks
   const [data, setData] = useState(() => {
@@ -20,9 +27,9 @@ export function CanalizacionDetailPage({ mode = 'view' }) {
       return {
         id: null,
         fecha: today,
-        estudianteId: '',
-        estudianteNombre: '',
-        carrera: '',
+        estudianteId: prefilledStudent?.id || '',
+        estudianteNombre: prefilledStudent?.nombre || '',
+        carrera:  prefilledStudent?.carrera || '',
         semestre: '',
         edad: '',
         division: user?.division || 'ISC',
@@ -121,11 +128,10 @@ export function CanalizacionDetailPage({ mode = 'view' }) {
           <input
             className="form-input"
             value={data.estudianteNombre}
-            onChange={(e) =>
-              handleChange('estudianteNombre', e.target.value)
-            }
-            disabled={!canEdit}
+            onChange={(e) => handleChange('estudianteNombre', e.target.value)}
+            disabled={!!prefilledStudent || !canEdit}
           />
+
         </div>
 
         <div className="form-group">
@@ -134,7 +140,7 @@ export function CanalizacionDetailPage({ mode = 'view' }) {
             className="form-input"
             value={data.estudianteId}
             onChange={(e) => handleChange('estudianteId', e.target.value)}
-            disabled={!canEdit}
+            disabled={!!prefilledStudent || !canEdit}
           />
         </div>
 
@@ -144,8 +150,13 @@ export function CanalizacionDetailPage({ mode = 'view' }) {
             className="form-input"
             value={data.carrera}
             onChange={(e) => handleChange('carrera', e.target.value)}
-            disabled={!canEdit}
+            disabled={!!prefilledStudent || !canEdit}
           />
+           {prefilledStudent && (
+            <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>
+              Estos datos se llenaron automáticamente desde la ficha del estudiante.
+            </p>
+          )}
         </div>
 
         <div className="form-group">

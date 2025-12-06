@@ -1,12 +1,31 @@
 // src/components/layout/MainLayout.jsx
-import { Link, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { mockRiesgosEstudiantes } from '../../mock/riesgosEstudiantes.js';
 
 export function MainLayout({ children }) {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
   const role = user?.role;
+
+  // —— Cálculo del nivel de riesgo global para el badge ——
+    // —— Cálculo del nivel de riesgo global para el badge ——
+    let riesgoGlobal = null;
+
+    if (role === 'COORDINACION' || role === 'JEFE_DIVISION') {
+      // 👇 Solo consideramos los que NO están atendidos
+      const lista = mockRiesgosEstudiantes.filter((e) => !e.atendido);
+
+      if (lista.some((e) => e.riesgo === 'ROJO')) {
+        riesgoGlobal = 'ROJO';
+      } else if (lista.some((e) => e.riesgo === 'AMARILLO')) {
+        riesgoGlobal = 'AMARILLO';
+      } else if (lista.some((e) => e.riesgo === 'VERDE')) {
+        riesgoGlobal = 'VERDE';
+      }
+    }
+
 
   // Menú dinámico según autenticación y rol
   const navLinks = [];
@@ -26,17 +45,21 @@ export function MainLayout({ children }) {
       navLinks.push({ to: '/usuarios', label: 'Usuarios' });
       navLinks.push({ to: '/tutorias', label: 'Tutorías' });
       navLinks.push({ to: '/canalizaciones', label: 'Canalizaciones' });
+      navLinks.push({ to: '/riesgos', label: 'Riesgo' });
+      navLinks.push({ to: '/alertas/configuracion', label: 'Configuracion' });
     }
 
     if (role === 'JEFE_DIVISION') {
       navLinks.push({ to: '/dashboard-division', label: 'Panel' });
       navLinks.push({ to: '/canalizaciones', label: 'Canalizaciones' });
+      navLinks.push({ to: '/riesgos', label: 'Riesgo' });
     }
 
     if (role === 'TUTOR') {
       navLinks.push({ to: '/dashboard-tutor', label: 'Panel' });
       navLinks.push({ to: '/tutorias', label: 'Tutorías' });
       navLinks.push({ to: '/canalizaciones', label: 'Canalizaciones' });
+      navLinks.push({ to: '/riesgos', label: 'Riesgo' });
     }
 
     if (role === 'DIRECCION') {
@@ -48,6 +71,19 @@ export function MainLayout({ children }) {
     logout();
     navigate('/', { replace: true });
   };
+  
+    function RiesgoBadge() {
+      if (!riesgoGlobal) return null;
+
+      if (riesgoGlobal === 'ROJO') {
+        return <span className="badge-risk" style={{ color: '#e74c3c' }}>🔴</span>;
+      }
+      if (riesgoGlobal === 'AMARILLO') {
+        return <span className="badge-risk" style={{ color: '#f1c40f' }}>🟡</span>;
+      }
+      // VERDE
+      return <span className="badge-risk" style={{ color: '#2ecc71' }}>🟢</span>;
+    }
 
   return (
     <div className="app-root">
@@ -56,14 +92,20 @@ export function MainLayout({ children }) {
           <span className="app-logo">Tutorías ITSJ</span>
         </div>
 
-        {/* 👇 SOLO usamos navLinks, nada hardcodeado aquí */}
-        <nav className="app-nav">
+        {/* 👇 SOLO usamos navLinks */}
+        <nav className="app-header-nav">
           {navLinks.map((link) => (
-            <Link key={link.to} to={link.to}>
+            <NavLink key={link.to} to={link.to} className="nav-link">
+
               {link.label}
-            </Link>
+
+              {/* Badge SOLO para el enlace de riesgos */}
+              {link.to === '/riesgos' && <RiesgoBadge />}
+
+            </NavLink>
           ))}
         </nav>
+
 
         <div className="app-header-right">
           {isAuthenticated && user ? (

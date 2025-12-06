@@ -16,6 +16,9 @@ import { TutoriaFormPage } from './pages/Tutorias/TutoriaFormPage.jsx';
 import { TutoriasStudentHistoryPage } from './pages/Tutorias/TutoriasStudentHistoryPage.jsx';
 import { CanalizacionesListPage } from './pages/Canalizaciones/CanalizacionesListPage.jsx';
 import { CanalizacionDetailPage } from './pages/Canalizaciones/CanalizacionDetailPage.jsx';
+import { RiskPanelPage } from './pages/Risk/RiskPanelPage.jsx';
+import { AlertsConfigPage } from './pages/Risk/AlertsConfigPage.jsx';
+import { StudentDetailPage } from './pages/Students/StudentDetailPage.jsx';
 
 
 function App() {
@@ -115,7 +118,16 @@ function App() {
         <Route
           path="/tutorias/:id"
           element={
-            <RequireAuth allowedRoles={['TUTOR', 'COORDINACION']}>
+            <RequireAuth allowedRoles={['COORDINACION', 'JEFE_DIVISION', 'TUTOR']}>
+              <TutoriaFormPage mode="view" />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/tutorias/historial/:id"
+          element={
+            <RequireAuth allowedRoles={['COORDINACION', 'JEFE_DIVISION', 'TUTOR']}>
               <TutoriaFormPage mode="view" />
             </RequireAuth>
           }
@@ -176,6 +188,33 @@ function App() {
             </RequireAuth>
           }
         />
+             {/* Riesgo Estudiantes */}
+          <Route
+            path="/riesgos"
+            element={
+              <RequireAuth allowedRoles={['COORDINACION', 'JEFE_DIVISION']}>
+                <RiskPanelPage />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/alertas/configuracion"
+            element={
+              <RequireAuth allowedRoles={['COORDINACION']}>
+                <AlertsConfigPage />
+              </RequireAuth>
+            }
+          />
+
+            <Route
+              path="/estudiantes/:id"
+              element={
+                <RequireAuth roles={['COORDINACION', 'JEFE_DIVISION', 'TUTOR']}>
+                  <StudentDetailPage />
+                </RequireAuth>
+              }
+            />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

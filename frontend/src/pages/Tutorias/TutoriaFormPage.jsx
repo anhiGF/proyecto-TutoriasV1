@@ -1,6 +1,6 @@
 // src/pages/Tutorias/TutoriaFormPage.jsx
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { mockTutorias } from '../../mock/tutorias.js';
 import { mockCanalizaciones } from '../../mock/canalizaciones.js';
@@ -9,16 +9,23 @@ export function TutoriaFormPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const role = user?.role ?? '';
+   const location = useLocation();
 
+  const prefilledStudent = location.state?.estudianteId
+    ? {
+        id: location.state.estudianteId,
+        nombre: location.state.estudianteNombre,
+        carrera: location.state.estudianteCarrera || '',
+      }
+    : null;
   // Estado inicial de la tutoría
   const [formData, setFormData] = useState(() => {
     const today = new Date().toISOString().slice(0, 10);
     return {
-      estudianteId: '',
-      estudianteNombre: '',
-      carrera: '',
+      estudianteId: prefilledStudent?.id || '',
+      estudianteNombre: prefilledStudent?.nombre || '',
+      carrera: prefilledStudent?.carrera || '',
       semestre: '',
-      // datos de tutor se toman del usuario actual
       tutorId: user?.email || '',
       tutorNombre: user?.name || 'Usuario Demo',
       fecha: today,
@@ -135,6 +142,7 @@ export function TutoriaFormPage() {
             className="form-input"
             value={formData.estudianteId}
             onChange={(e) => handleChange('estudianteId', e.target.value)}
+         disabled={!!prefilledStudent}
           />
         </div>
 
@@ -143,8 +151,12 @@ export function TutoriaFormPage() {
           <input
             className="form-input"
             value={formData.estudianteNombre}
-            onChange={(e) => handleChange('estudianteNombre', e.target.value)}
+            onChange={(e) =>
+              setFormData(prev => ({ ...prev, estudianteNombre: e.target.value }))
+            }
+            disabled={!!prefilledStudent}  // si viene de la ficha, no se puede cambiar
           />
+          
         </div>
 
         <div className="form-group">
@@ -153,7 +165,13 @@ export function TutoriaFormPage() {
             className="form-input"
             value={formData.carrera}
             onChange={(e) => handleChange('carrera', e.target.value)}
+          disabled={!!prefilledStudent}
           />
+          {prefilledStudent && (
+            <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>
+              Este estudiante se llenó automáticamente desde la ficha.
+            </p>
+          )}
         </div>
 
         <div className="form-group">
