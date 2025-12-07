@@ -55,6 +55,122 @@ a {
   display: flex;
   gap: 1rem;
 }
+/* Contenedor general */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header delgado arriba */
+.app-header {
+  height: 56px;
+  padding: 0 1rem;
+  border-bottom: 1px solid #eee;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sidebar-toggle-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Cuerpo con sidebar + contenido */
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0; /* para que flex calcule bien */
+}
+
+/* SIDEBAR */
+.app-sidebar {
+  background: #ffffff;
+  border-right: 1px solid #eee;
+  width: 220px;
+  transition: width 0.25s ease;
+  padding: 0.75rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-sidebar.collapsed {
+  width: 64px;
+}
+
+/* Navegación lateral */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.95rem;
+  color: #444;
+  transition: background 0.2s, color 0.2s;
+}
+
+.sidebar-link-bullet {
+  font-size: 0.7rem;
+}
+
+.sidebar-link:hover {
+  background: #fde0e0;
+  color: #c62828;
+}
+
+.sidebar-link.is-active {
+  background: #e57373;
+  color: #fff;
+}
+
+.sidebar-link.is-active .badge-risk {
+  filter: drop-shadow(0 0 2px rgba(0,0,0,0.2));
+}
+
+/* Cuando está colapsado, ocultamos el texto */
+.app-sidebar.collapsed .sidebar-link-text {
+  display: none;
+}
+
+.app-sidebar.collapsed .sidebar-link {
+  justify-content: center;
+}
+
+/* Contenido principal */
+.app-main {
+  flex: 1;
+  padding: 1.5rem 2rem;
+  overflow-y: auto;
+}
+
+/* Footer */
+.app-footer {
+  border-top: 1px solid #eee;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  text-align: center;
+  background: #fafafa;
+}
+
 /*Menu*/
 .nav-link {
   text-decoration: none;
@@ -293,4 +409,337 @@ a {
   height: 2px;
   background: #e57373;
   border-radius: 999px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+}
+
+.modal {
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.upload-dropzone {
+  border: 2px dashed #e0e0e0;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #555;
+  background: #fafafa;
+}
+
+.upload-dropzone:hover {
+  border-color: #e57373;
+  background: #fff7f7;
+}
+
+.doc-preview-pdf-wrapper {
+  margin-top: 0.5rem;
+  border: 1px solid #eee;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.doc-preview-pdf {
+  width: 100%;
+  height: 500px;
+  border: none;
+}
+
+/* Contenedor común para las vistas "mock" */
+.doc-preview-placeholder {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.doc-preview-sheet {
+  width: 100%;
+  max-width: 600px;
+  border-radius: 0.75rem;
+  border: 1px solid #e0e0e0;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+}
+
+/* Cabecera de la “hoja” */
+.doc-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.doc-type-pill {
+  display: inline-block;
+  padding: 0.15rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #fce4ec;
+  color: #ad1457;
+}
+
+.doc-file-type {
+  font-size: 0.75rem;
+  color: #777;
+}
+
+.doc-preview-body {
+  line-height: 1.5;
+}
+
+.doc-preview-title {
+  font-weight: 600;
+  margin-bottom: 0.1rem;
+}
+
+.doc-preview-meta {
+  font-size: 0.8rem;
+  color: #777;
+  margin-bottom: 0.75rem;
+}
+
+.doc-preview-text {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+/* Estilos según tipo de documento */
+.doc-preview-oficio {
+  border-left: 4px solid #64b5f6;
+}
+
+.doc-preview-reporte {
+  border-left: 4px solid #81c784;
+}
+
+.doc-preview-constancia {
+  border-left: 4px solid #ffb74d;
+}
+
+.mini-card {
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #fafafa;
+  border: 1px solid #eeeeee;
+}
+
+.mini-card-label {
+  font-size: 0.8rem;
+  color: #777;
+  margin-bottom: 0.25rem;
+}
+
+.mini-card-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.chart-section {
+  margin-top: 1.5rem;
+}
+
+.chart-rows {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 2fr 5fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.chart-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chart-bar-container {
+  height: 0.8rem;
+  background: #f0f0f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.chart-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: #e57373;
+}
+
+.chart-value {
+  font-weight: 600;
+  text-align: right;
+}
+
+/* “Pastel” simple en forma de franja apilada */
+.chart-pie-wrapper {
+  margin-top: 0.75rem;
+}
+
+.chart-pie-strip {
+  display: flex;
+  height: 1rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #f0f0f0;
+  margin-bottom: 0.75rem;
+}
+
+.chart-pie-segment {
+  height: 100%;
+}
+
+/* Colores alternados por índice (usamos data-index en legend sólo para mostrar color asociado) */
+.chart-pie-segment:nth-child(1) { background: #e57373; }
+.chart-pie-segment:nth-child(2) { background: #64b5f6; }
+.chart-pie-segment:nth-child(3) { background: #81c784; }
+.chart-pie-segment:nth-child(4) { background: #ffb74d; }
+.chart-pie-segment:nth-child(5) { background: #ba68c8; }
+/* si hay más factores, se repetirán los colores */
+
+.chart-pie-legend {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.85rem;
+  color: #555;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chart-pie-dot {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  margin-right: 0.35rem;
+}
+
+/* Colores sincronizados con los segmentos (por posición aproximada) */
+.chart-pie-legend li:nth-child(1) .chart-pie-dot { background: #e57373; }
+.chart-pie-legend li:nth-child(2) .chart-pie-dot { background: #64b5f6; }
+.chart-pie-legend li:nth-child(3) .chart-pie-dot { background: #81c784; }
+.chart-pie-legend li:nth-child(4) .chart-pie-dot { background: #ffb74d; }
+.chart-pie-legend li:nth-child(5) .chart-pie-dot { background: #ba68c8; }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.75rem;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.modal-close-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.sweet-alert {
+  text-align: center;
+  padding: 1.5rem 1.75rem;
+}
+
+.sweet-alert__icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: 3px solid #f44336;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #f44336;
+  margin-bottom: 0.75rem;
+}
+
+.sweet-alert__title {
+  margin-bottom: 0.5rem;
+}
+
+.sweet-alert__text {
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.sweet-alert__actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.btn-danger {
+  background-color: #f44336;
+  color: #fff;
+}
+
+.btn-link-danger {
+  color: #f44336;
 }

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mockUsers } from '../../mock/users.js';
-import { Modal } from '../../components/ui/Modal.jsx';
+import Modal  from '../../components/ui/Modal.jsx';
 
 export function UsersListPage() {
   const [users, setUsers] = useState(mockUsers);

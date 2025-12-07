@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { Modal } from '../../components/ui/Modal.jsx';
+import  Modal  from '../../components/ui/Modal.jsx';
 
 function defaultRouteByRole(role) {
   switch (role) {

@@ -19,7 +19,12 @@ import { CanalizacionDetailPage } from './pages/Canalizaciones/CanalizacionDetai
 import { RiskPanelPage } from './pages/Risk/RiskPanelPage.jsx';
 import { AlertsConfigPage } from './pages/Risk/AlertsConfigPage.jsx';
 import { StudentDetailPage } from './pages/Students/StudentDetailPage.jsx';
-
+import { DocumentListPage } from './pages/Documentos/DocumentListPage.jsx';
+import { DocumentDetailPage } from './pages/Documentos/DocumentDetailPage.jsx';
+import ReportGeneratorPage from './pages/Reports/ReportGeneratorPage.jsx';
+import StatsChartsPage from './pages/Reports/StatsChartsPage.jsx';
+import ActivityLogPage from './pages/ActivityLogPage';
+import StudentsManagePage from './pages/Students/StudentsManagePage.jsx';
 
 function App() {
   return (
@@ -215,6 +220,59 @@ function App() {
                 </RequireAuth>
               }
             />
+               {/* Documentos  */}
+            <Route
+              path="/documentos"
+              element={
+                <RequireAuth allowedRoles={['COORDINACION', 'JEFE_DIVISION', 'TUTOR', 'DIRECCION']}>
+                  <DocumentListPage />
+                </RequireAuth>
+              }
+            />
+
+            <Route
+              path="/documentos/:id"
+              element={
+                <RequireAuth allowedRoles={['COORDINACION', 'JEFE_DIVISION', 'TUTOR', 'DIRECCION']}>
+                  <DocumentDetailPage />
+                </RequireAuth>
+              }
+            />
+
+              <Route
+                path="/reportes"
+                element={
+                  <RequireAuth allowedRoles={['COORDINACION', 'JEFE_DIVISION', 'TUTOR', 'DIRECCION']}>
+                    <ReportGeneratorPage />
+                  </RequireAuth>
+                }
+              />
+
+              <Route
+                path="/estadisticas"
+                element={
+                 <RequireAuth allowedRoles={['COORDINACION', 'JEFE_DIVISION', 'TUTOR', 'DIRECCION']}>
+                    <StatsChartsPage />
+                  </RequireAuth>
+                }
+              />
+
+                <Route
+                  path="/bitacora"
+                  element={
+                    <RequireAuth allowedRoles={['COORDINACION', 'DIRECCION']}>
+                      <ActivityLogPage />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                path="/gestion-estudiantes"
+                element={
+                  <RequireAuth allowedRoles={['COORDINACION', 'DIRECCION', 'JEFE_DIVISION']}>
+                    <StudentsManagePage />
+                  </RequireAuth>
+                }
+              />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
