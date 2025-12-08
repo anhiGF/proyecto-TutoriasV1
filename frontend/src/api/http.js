@@ -1,10 +1,15 @@
 // src/api/http.js
 import axios from "axios";
 
+// ⚠️ Mejor: importa esta constante desde donde la definas originalmente
 export const STORAGE_KEY = "tutorias_auth_demo";
 
+// 👉 baseURL dinámica: producción usa VITE_API_URL, local usa localhost
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+
 const http = axios.create({
-  baseURL: "http://localhost:8000/api",
+  baseURL: API_BASE_URL,
 });
 
 // Interceptor: antes de cada request, agrega el Authorization si hay token válido
