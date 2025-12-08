@@ -30,7 +30,6 @@ export function MainLayout({ children }) {
   const navLinks = [];
 
   // Siempre mostrar Inicio
-  navLinks.push({ to: '/', label: 'Inicio' });
 
   if (!isAuthenticated) {
     navLinks.push({ to: '/', label: 'Inicio' });
