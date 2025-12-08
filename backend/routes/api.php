@@ -33,7 +33,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/students/{id}', [StudentController::class, 'update']);
     Route::delete('/students/{id}', [StudentController::class, 'destroy']);
     Route::post('/students/assign-tutor', [StudentController::class, 'assignTutor']);
-    // ---------- Users ----------
+   
+});    
+
+
+ // ---------- Users ----------
     Route::get('/users',              [UserController::class, 'index']);
     Route::post('/users',             [UserController::class, 'store']);
     Route::get('/users/{id}',         [UserController::class, 'show']);
@@ -45,7 +49,3 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword']);
     Route::post('/users/{id}/toggle-status',  [UserController::class, 'toggleStatus']);
-
-});    
-
-
