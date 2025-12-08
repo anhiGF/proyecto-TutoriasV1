@@ -71,7 +71,7 @@ pipeline {
 
         stage('Deploy to Render') {
             when {
-                branch 'main'
+                branch 'master'
             }
             steps {
                 echo "Desplegando backend y frontend a Render..."
