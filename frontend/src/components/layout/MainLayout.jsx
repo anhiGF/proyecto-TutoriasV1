@@ -33,8 +33,8 @@ export function MainLayout({ children }) {
   navLinks.push({ to: '/', label: 'Inicio' });
 
   if (!isAuthenticated) {
-    navLinks.push({ to: '/login', label: 'Iniciar sesión' });
-          navLinks.push({ to: '/usuarios', label: 'Usuarios' });
+    navLinks.push({ to: '/usuarios', label: 'Usuarios' });
+    //navLinks.push({ to: '/login', label: 'Iniciar sesión' });
   } else {
     navLinks.push({ to: '/perfil', label: 'Mi perfil' });
 
