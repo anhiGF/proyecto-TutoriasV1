@@ -1,77 +1,82 @@
+// src/context/AuthContext.jsx
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState } from "react";
+import { AuthApi } from "../api/authApi";
+import { STORAGE_KEY } from "../api/http";
 
 const AuthContext = createContext(null);
+const SESSION_DURATION_MS = 15 * 60 * 1000; // 15 minutos
 
-const STORAGE_KEY = 'tutorias_auth_demo';
-const SESSION_DURATION_MS = 60 * 1000; // 1 minuto
-
-// Esta función se ejecuta una sola vez al montar el contexto
-function loadInitialUser() {
+function loadInitialSession() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return null;
+    if (!saved) return { user: null, token: null };
 
     const parsed = JSON.parse(saved);
-
-    // si no hay expiración o ya caducó, borramos y regresamos null
     if (!parsed.expiresAt || parsed.expiresAt <= Date.now()) {
       localStorage.removeItem(STORAGE_KEY);
-      return null;
+      return { user: null, token: null };
     }
 
-    return parsed.user || null;
+    return {
+      user: parsed.user || null,
+      token: parsed.token || null,
+    };
   } catch (err) {
-    console.error('Error leyendo sesión almacenada', err);
-    return null;
+    console.error("Error leyendo sesión almacenada", err);
+    return { user: null, token: null };
   }
 }
 
 export function AuthProvider({ children }) {
-  // user se inicializa leyendo localStorage UNA sola vez
-  const [user, setUser] = useState(loadInitialUser);
+  const initial = loadInitialSession();
+  const [user, setUser] = useState(initial.user);
+  const [token, setToken] = useState(initial.token);
 
   const login = async (email, password) => {
-    if (!email.endsWith('@itsj.edu.mx')) {
-      throw new Error('El correo debe ser institucional (@itsj.edu.mx).');
-    }
-    if (password.length < 4) {
-      throw new Error('La contraseña es demasiado corta.');
-    }
+    try {
 
-    let role = 'TUTOR';
-    if (email.startsWith('coord')) role = 'COORDINACION';
-    if (email.startsWith('jefe')) role = 'JEFE_DIVISION';
-    if (email.startsWith('dir')) role = 'DIRECCION';
+    const data = await AuthApi.login(email, password);
 
-    const fakeUser = {
-      name: 'Usuario Demo',
-      email,
-      role,
-      division: 'Ingeniería en Sistemas Computacionales',
-    };
-
-    // simulamos delay de red
-    await new Promise((res) => setTimeout(res, 300));
+    const userFromApi = data.user ?? data;
+    const tokenFromApi = data.token ?? null;
 
     const session = {
-      user: fakeUser,
+      user: userFromApi,
+      token: tokenFromApi,
       expiresAt: Date.now() + SESSION_DURATION_MS,
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-    setUser(fakeUser);
+    setUser(userFromApi);
+    setToken(tokenFromApi);
 
-    return fakeUser;
+    return userFromApi;
+    } catch (err) {
+      console.error("Error en login", err);
+
+      if (err.response?.status === 401) {
+        throw new Error("Correo o contraseña incorrectos.");
+      }
+
+      throw new Error("No se pudo iniciar sesión. Intenta de nuevo.");
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await AuthApi.logout();
+    } catch (e) {
+      console.warn("Logout en backend falló (continuando de todos modos)", e);
+    }
     setUser(null);
+    setToken(null);
     localStorage.removeItem(STORAGE_KEY);
   };
 
   const value = {
     user,
+    token,
     isAuthenticated: !!user,
     login,
     logout,
@@ -83,7 +88,7 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    throw new Error('useAuth debe usarse dentro de un AuthProvider');
+    throw new Error("useAuth debe usarse dentro de un AuthProvider");
   }
   return ctx;
 }

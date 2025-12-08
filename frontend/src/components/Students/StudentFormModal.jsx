@@ -1,162 +1,312 @@
 // src/components/Students/StudentFormModal.jsx
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import Modal from "../ui/Modal";           // ajusta la ruta si tu Modal está en otro lado
+import { StudentsApi } from "../../api/studentsApi";
 
-export default function StudentFormModal({ student, tutors = [], onSave, onClose }) {
-  const isEdit = Boolean(student);
+// Carreras que se imparten en el Tec de Jerez (ajusta si falta alguna)
+const CAREERS = [
+  { value: "ISC", label: "ISC - Ing. en Sistemas Computacionales" },
+  { value: "II", label: "II - Ing. Industrial" },
+  { value: "IGE", label: "IGE - Ing. en Gestión Empresarial" },
+  { value: "IM", label: "IM - Ing. Mecatrónica" },
+  { value: "IE", label: "IE - Ing. Electrónica" },
+  { value: "IIAS", label: "IIAS - Ing. en Innovación Agrícola Sustentable" },
+  { value: "IADM", label: "IADM - Ing. en Administración" },
+];
+
+const ESTADOS = ["REGULAR", "IRREGULAR", "RIESGO"];
+
+const CONTROL_REGEX = /^[A-Za-z0-9]{8,9}$/;
+const NAME_REGEX = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/;
+
+// Periodo actual (formato 2025-1 / 2025-2)
+function getCurrentPeriod() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1;
+  const ciclo = month <= 6 ? 1 : 2;
+  return `${year}-${ciclo}`;
+}
+
+export default function StudentFormModal({ student, onClose, onSaved }) {
+  // 👉 si viene un student con id, es edición
+  const isEdit = Boolean(student && student.id);
 
   const [form, setForm] = useState({
-    id: student?.id || null,
-    numControl: student?.numControl || "",
-    nombre: student?.nombre || "",
-    carrera: student?.carrera || "ISC",
-    semestre: student?.semestre || 1,
-    periodo: student?.periodo || "",
-    estado: student?.estado || "REGULAR",
-    tutorId: student?.tutorId || "",
-    tutorNombre: student?.tutorNombre || "",
+    num_control: "",
+    nombre: "",
+    carrera: "",
+    semestre: "1",
+    periodo: getCurrentPeriod(),
+    estado: "REGULAR",
   });
 
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  // Cargar datos cuando es edición
   useEffect(() => {
-    if (student) {
+    if (isEdit) {
       setForm({
-        id: student.id,
-        numControl: student.numControl || "",
-        nombre: student.nombre || "",
-        carrera: student.carrera || "ISC",
-        semestre: student.semestre || 1,
-        periodo: student.periodo || "",
-        estado: student.estado || "REGULAR",
-        tutorId: student.tutorId || "",
-        tutorNombre: student.tutorNombre || "",
+        num_control: student.num_control ?? "",
+        nombre: student.nombre ?? "",
+        carrera: student.carrera ?? "",
+        semestre: String(student.semestre ?? "1"),
+        periodo: student.periodo ?? getCurrentPeriod(),
+        estado: student.estado ?? "REGULAR",
+      });
+    } else {
+      // nuevo → limpia y pone periodo actual
+      setForm({
+        num_control: "",
+        nombre: "",
+        carrera: "",
+        semestre: "1",
+        periodo: getCurrentPeriod(),
+        estado: "REGULAR",
       });
     }
-  }, [student]);
+  }, [isEdit, student]);
 
-  const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    let newValue = value;
+
+    if (name === "num_control") {
+      // Solo letras y números, max 9
+      newValue = value.replace(/[^A-Za-z0-9]/g, "").slice(0, 9);
+    }
+
+    if (name === "nombre") {
+      // Solo letras (con acentos) y espacios
+      newValue = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "");
+    }
+
+    if (name === "semestre") {
+      newValue = value.replace(/\D/g, "");
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: newValue,
+    }));
   };
 
-  const handleSubmit = (e) => {
+  const validate = () => {
+    const newErrors = {};
+
+    if (!CONTROL_REGEX.test(form.num_control)) {
+      newErrors.num_control =
+        "El número de control debe tener entre 8 y 9 caracteres alfanuméricos.";
+    }
+
+    if (!form.nombre.trim() || !NAME_REGEX.test(form.nombre.trim())) {
+      newErrors.nombre = "El nombre solo puede contener letras y espacios.";
+    }
+
+    if (!form.carrera) {
+      newErrors.carrera = "Selecciona una carrera.";
+    }
+
+    const sem = Number(form.semestre);
+    if (!Number.isInteger(sem) || sem < 1 || sem > 15) {
+      newErrors.semestre = "El semestre debe estar entre 1 y 15.";
+    }
+
+    if (!form.periodo) {
+      newErrors.periodo = "El periodo es obligatorio.";
+    }
+
+    if (!form.estado) {
+      newErrors.estado = "Selecciona un estado académico.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
 
-    const selectedTutor = tutors.find((t) => t.id === form.tutorId);
+    setSaving(true);
+    try {
+      const payload = {
+        num_control: form.num_control,
+        nombre: form.nombre.trim(),
+        carrera: form.carrera,
+        semestre: Number(form.semestre),
+        periodo: form.periodo,
+        estado: form.estado,
+      };
 
-    const payload = {
-      ...form,
-      semestre: Number(form.semestre),
-      tutorNombre: selectedTutor ? selectedTutor.nombre : form.tutorNombre,
-    };
+      if (isEdit) {
+        await StudentsApi.update(student.id, payload);
+      } else {
+        await StudentsApi.create(payload);
+      }
 
-    if (onSave) onSave(payload);
-    if (onClose) onClose();
+      // avisar al padre para recargar lista
+      if (onSaved) await onSaved();
+      onClose && onClose();
+    } catch (err) {
+      console.error(err);
+      setErrors((prev) => ({
+        ...prev,
+        global: "Ocurrió un error al guardar. Intenta de nuevo.",
+      }));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal">
-        <h2 className="modal-title">
-          {isEdit ? "Editar estudiante" : "Registrar estudiante"}
-        </h2>
+    <Modal isOpen={true} onClose={onClose} title={isEdit ? "Editar estudiante" : "Registrar estudiante"}>
+      <div className="student-form-modal">
+        {errors.global && (
+          <div className="form-alert-error">{errors.global}</div>
+        )}
 
-        <form onSubmit={handleSubmit} className="form-grid">
-          <div className="form-group">
-            <label className="form-label">Número de control</label>
+        <form onSubmit={handleSubmit} className="student-form-grid">
+          {/* Número de control */}
+          <div className="form-field">
+            <label htmlFor="num_control">Número de control</label>
             <input
-              className="form-input"
-              value={form.numControl}
-              onChange={(e) => handleChange("numControl", e.target.value)}
+              id="num_control"
+              name="num_control"
+              type="text"
+              value={form.num_control}
+              onChange={handleChange}
+              minLength={8}
+              maxLength={9}
               required
             />
+            {errors.num_control && (
+              <p className="field-error">{errors.num_control}</p>
+            )}
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Nombre completo</label>
+          {/* Nombre */}
+          <div className="form-field">
+            <label htmlFor="nombre">Nombre completo</label>
             <input
-              className="form-input"
+              id="nombre"
+              name="nombre"
+              type="text"
               value={form.nombre}
-              onChange={(e) => handleChange("nombre", e.target.value)}
+              onChange={handleChange}
               required
             />
+            {errors.nombre && (
+              <p className="field-error">{errors.nombre}</p>
+            )}
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Carrera</label>
+          {/* Carrera */}
+          <div className="form-field">
+            <label htmlFor="carrera">Carrera</label>
             <select
-              className="form-input"
+              id="carrera"
+              name="carrera"
               value={form.carrera}
-              onChange={(e) => handleChange("carrera", e.target.value)}
+              onChange={handleChange}
+              required
             >
-              <option value="ISC">ISC</option>
-              <option value="II">II</option>
-              <option value="IGE">IGE</option>
-              <option value="CP">CP</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Semestre</label>
-            <input
-              type="number"
-              min={1}
-              max={12}
-              className="form-input"
-              value={form.semestre}
-              onChange={(e) => handleChange("semestre", e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Periodo</label>
-            <input
-              className="form-input"
-              placeholder="2025-1, 2025-2…"
-              value={form.periodo}
-              onChange={(e) => handleChange("periodo", e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Estado académico</label>
-            <select
-              className="form-input"
-              value={form.estado}
-              onChange={(e) => handleChange("estado", e.target.value)}
-            >
-              <option value="REGULAR">REGULAR</option>
-              <option value="IRREGULAR">IRREGULAR</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Tutor asignado (opcional)</label>
-            <select
-              className="form-input"
-              value={form.tutorId || ""}
-              onChange={(e) => handleChange("tutorId", e.target.value)}
-            >
-              <option value="">Sin asignar</option>
-              {tutors.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.nombre} ({t.email})
+              <option value="">Selecciona una carrera</option>
+              {CAREERS.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
                 </option>
               ))}
             </select>
+            {errors.carrera && (
+              <p className="field-error">{errors.carrera}</p>
+            )}
           </div>
 
-          <div className="modal-actions" style={{ gridColumn: "1 / -1" }}>
-            <button type="submit" className="btn btn-primary">
-              {isEdit ? "Guardar cambios" : "Registrar estudiante"}
-            </button>
+          {/* Semestre */}
+          <div className="form-field">
+            <label htmlFor="semestre">Semestre</label>
+            <select
+              id="semestre"
+              name="semestre"
+              value={form.semestre}
+              onChange={handleChange}
+              required
+            >
+              {Array.from({ length: 15 }).map((_, i) => {
+                const n = i + 1;
+                return (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                );
+              })}
+            </select>
+            {errors.semestre && (
+              <p className="field-error">{errors.semestre}</p>
+            )}
+          </div>
+
+          {/* Periodo (solo lectura) */}
+          <div className="form-field">
+            <label htmlFor="periodo">Periodo</label>
+            <input
+              id="periodo"
+              name="periodo"
+              type="text"
+              value={form.periodo}
+              readOnly
+            />
+            {errors.periodo && (
+              <p className="field-error">{errors.periodo}</p>
+            )}
+            <p className="field-hint">
+              Se genera automáticamente según la fecha actual.
+            </p>
+          </div>
+
+          {/* Estado académico */}
+          <div className="form-field">
+            <label htmlFor="estado">Estado académico</label>
+            <select
+              id="estado"
+              name="estado"
+              value={form.estado}
+              onChange={handleChange}
+              required
+            >
+              {ESTADOS.map((e) => (
+                <option key={e} value={e}>
+                  {e}
+                </option>
+              ))}
+            </select>
+            {errors.estado && (
+              <p className="field-error">{errors.estado}</p>
+            )}
+          </div>
+
+          {/* Botones */}
+          <div className="modal-actions">
             <button
               type="button"
-              className="btn btn-link"
+              className="btn btn-secondary"
               onClick={onClose}
+              disabled={saving}
             >
               Cancelar
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={saving}
+            >
+              {saving ? "Guardando..." : "Guardar"}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   );
 }

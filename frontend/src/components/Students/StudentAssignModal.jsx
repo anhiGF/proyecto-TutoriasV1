@@ -1,55 +1,114 @@
 // src/components/Students/StudentAssignModal.jsx
-import React, { useState } from "react";
+import { useState } from "react";
+import { StudentsApi } from "../../api/studentsApi";
 
 export default function StudentAssignModal({
-  tutorList = [],
-  selectedIds = [],
-  onAssign,
+  selectedIds,
+  tutorList,
   onClose,
+  onAssigned,  // ⬅️ OPCIONAL: callback para refrescar lista
 }) {
-  const [tutorId, setTutorId] = useState("");
+  const [tutorEmail, setTutorEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!tutorId) return;
-    if (onAssign) onAssign(tutorId);
+  const handleAssign = async () => {
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    if (!tutorEmail) {
+      setErrorMsg("Selecciona un tutor.");
+      return;
+    }
+
+    if (!selectedIds.length) {
+      setErrorMsg("No hay estudiantes seleccionados.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await StudentsApi.assignTutor({
+        tutor_email: tutorEmail,
+        student_ids: selectedIds,
+      });
+
+      setSuccessMsg("Tutor asignado correctamente.");
+
+      // ⬅️ Si mandas un callback para refrescar, se ejecuta aquí
+      if (onAssigned) onAssigned();
+
+    } catch (err) {
+      console.error("Error asignando tutor", err);
+      setErrorMsg("No se pudo asignar el tutor. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal">
-        <h2 className="modal-title">Asignar tutor a seleccionados</h2>
-        <p className="modal-subtitle">
-          Estudiantes seleccionados: <strong>{selectedIds.length}</strong>
+    <div className="modal-backdrop">
+      <div className="modal-card">
+
+        <h2>Asignar tutor a {selectedIds.length} estudiante(s)</h2>
+
+        {errorMsg && <div className="alert alert-error">{errorMsg}</div>}
+        {successMsg && <div className="alert alert-success">{successMsg}</div>}
+
+        {/* ⬅️ Bloquear inputs si ya se asignó */}
+        <div className="form-group">
+          <label>Selecciona un tutor</label>
+          <select
+            value={tutorEmail}
+            disabled={!!successMsg}
+            onChange={(e) => setTutorEmail(e.target.value)}
+          >
+            <option value="">-- Selecciona --</option>
+            {tutorList.map((t) => (
+              <option key={t.id} value={t.email}>
+                {t.nombre} ({t.email})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <p className="modal-hint">
+          Se asignará este tutor a todos los estudiantes seleccionados.
         </p>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Selecciona un tutor</label>
-            <select
-              className="form-input"
-              value={tutorId}
-              onChange={(e) => setTutorId(e.target.value)}
-              required
-            >
-              <option value="">-- Seleccionar --</option>
-              {tutorList.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.nombre} ({t.email})
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="modal-actions">
 
-          <div className="modal-actions">
-            <button type="submit" className="btn btn-primary">
-              Asignar tutor
-            </button>
-            <button type="button" className="btn btn-link" onClick={onClose}>
+          {/* BOTÓN CANCELAR (solo visible si NO hay éxito) */}
+          {!successMsg && (
+            <button className="btn btn-secondary" onClick={onClose}>
               Cancelar
             </button>
-          </div>
-        </form>
+          )}
+
+          {/* BOTÓN ASIGNAR (solo si NO hay éxito) */}
+          {!successMsg && (
+            <button
+              className="btn btn-primary"
+              onClick={handleAssign}
+              disabled={loading}
+            >
+              {loading ? "Asignando..." : "Asignar"}
+            </button>
+          )}
+
+          {/* ✔ BOTÓN ACEPTAR (solo si hay éxito) */}
+          {successMsg && (
+            <button
+              className="btn btn-success"
+              onClick={onClose}
+            >
+              Aceptar
+            </button>
+          )}
+
+        </div>
       </div>
     </div>
   );

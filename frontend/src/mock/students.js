@@ -13,20 +13,32 @@ export const mockStudents = [
   },
   // ...
 ];
+
+// frontend/src/mock/students.js
+
 export const mockTutors = [
   {
-    id: 't1',
-    email: 'tutor1@itsj.edu.mx',
-    nombre: 'Tutor ISC 1',
-    carrera: 'ISC',
-    division: 'ISC',
+    id: 1,
+    nombre: "Tutor ISC 1",
+    carrera: "ISC",
+    email: "tutor1@itsj.edu.mx",
   },
   {
-    id: 't2',
-    email: 'tutor2@itsj.edu.mx',
-    nombre: 'Tutor ISC 2',
-    carrera: 'ISC',
-    division: 'ISC',
+    id: 2,
+    nombre: "Tutor ISC 2",
+    carrera: "ISC",
+    email: "tutor2@itsj.edu.mx",
   },
-  // agrega los tutores que necesites
+  {
+    id: 3,
+    nombre: "Tutor II 1",
+    carrera: "II",
+    email: "tutor3@itsj.edu.mx",
+  },
+  {
+    id: 4,
+    nombre: "Tutor CP 1",
+    carrera: "CP",
+    email: "tutor4@itsj.edu.mx",
+  },
 ];

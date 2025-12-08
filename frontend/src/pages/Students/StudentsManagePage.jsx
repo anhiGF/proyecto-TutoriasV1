@@ -1,5 +1,5 @@
 // src/pages/Students/StudentsManagePage.jsx
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 import StudentsTable from "../../components/Students/StudentsTable";
 import StudentFilters from "../../components/Students/StudentFilters";
@@ -7,12 +7,14 @@ import StudentAssignModal from "../../components/Students/StudentAssignModal";
 import StudentDeleteModal from "../../components/Students/StudentDeleteModal";
 import StudentFormModal from "../../components/Students/StudentFormModal";
 
-// 👉 Datos mock (después se conectarán a la BD)
-import { mockStudents, mockTutors } from "../../mock/students";
+import { StudentsApi } from "../../api/studentsApi";
+import { mockTutors } from "../../mock/students";
 
 export default function StudentsManagePage() {
-  // 🔹 AHORA los estudiantes viven en estado, no sólo en el mock
-  const [students, setStudents] = useState(mockStudents);
+  // ---------------- ESTADO PRINCIPAL ----------------
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const [filters, setFilters] = useState({
     periodo: "",
@@ -28,35 +30,65 @@ export default function StudentsManagePage() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
   const [editingStudent, setEditingStudent] = useState(null);
 
-  // --------------------------
-  // 🔧 Manejo de filtros
-  // --------------------------
+  // ---------------- CARGAR LISTA DESDE API ----------------
+  const loadStudents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const res = await StudentsApi.list();
+      // Laravel puede regresar varias formas, cubrimos las típicas:
+      const rows =
+        res.data?.data || 
+        res.data?.students || 
+        res.data || 
+        [];
+
+      setStudents(rows);
+    } catch (err) {
+      console.error("Error cargando estudiantes", err);
+      setError("No se pudieron cargar los estudiantes.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadStudents();
+  }, []);
+// Recargar estudiantes cada 15 segundos
+useEffect(() => {
+  const interval = setInterval(() => {
+    loadStudents();  
+  }, 15000); // 15000 ms = 15 segundos
+
+  return () => clearInterval(interval); // limpiar intervalo al salir
+}, []);
+
+  // ---------------- CAMBIO DE FILTROS ----------------
   const handleFiltersChange = (next) => {
-    setPage(1);         // reset de página
-    setSelectedIds([]); // limpiar selección
+    // resetear paginación y selección
+    setPage(1);
+    setSelectedIds([]);
 
     setFilters((prev) => (typeof next === "function" ? next(prev) : next));
   };
 
-  // --------------------------
-  // 🔎 Filtrado de estudiantes
-  // --------------------------
+  // ---------------- FILTRADO EN MEMORIA ----------------
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
       if (filters.carrera !== "TODAS" && s.carrera !== filters.carrera) return false;
       if (filters.estado !== "TODOS" && s.estado !== filters.estado) return false;
-      if (filters.tutorId !== "TODOS" && s.tutorId !== filters.tutorId) return false;
+      if (filters.tutorId !== "TODOS" && String(s.tutor_id) !== String(filters.tutorId))
+        return false;
       if (filters.periodo && s.periodo !== filters.periodo) return false;
       return true;
     });
   }, [students, filters]);
 
-  // --------------------------
-  // 📄 Paginación real
-  // --------------------------
+  // ---------------- PAGINACIÓN ----------------
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
 
@@ -65,9 +97,8 @@ export default function StudentsManagePage() {
     return filteredStudents.slice(start, start + pageSize);
   }, [filteredStudents, page]);
 
-  // --------------------------
-  // 🧩 Acciones
-  // --------------------------
+  // ---------------- ACCIONES ----------------
+
   const handleEdit = (student) => {
     setEditingStudent(student);
     setShowFormModal(true);
@@ -78,75 +109,52 @@ export default function StudentsManagePage() {
     setShowDeleteModal(true);
   };
 
-  const handleAssignTutor = () => setShowAssignModal(true);
-
-  // 💾 Guardar/crear estudiante desde el modal
-  const handleSaveStudent = (data) => {
-    setStudents((prev) => {
-      if (data.id) {
-        // editar
-        return prev.map((s) => (s.id === data.id ? { ...s, ...data } : s));
-      }
-      // crear nuevo
-      const nextId = prev.length ? Math.max(...prev.map((s) => s.id)) + 1 : 1;
-      return [
-        ...prev,
-        {
-          ...data,
-          id: nextId,
-        },
-      ];
-    });
+  const handleAssignTutor = () => {
+    if (selectedIds.length === 0) return;
+    setShowAssignModal(true);
   };
 
-  // 🗑 Confirmar eliminación
-  const handleConfirmDelete = () => {
-    if (!editingStudent) return;
-
-    setStudents((prev) => prev.filter((s) => s.id !== editingStudent.id));
-    setSelectedIds((prev) => prev.filter((id) => id !== editingStudent.id));
+  const handleAfterSave = () => {
     setEditingStudent(null);
+    setShowFormModal(false);
+    loadStudents();
+  };
+
+  const handleAfterDelete = () => {
     setShowDeleteModal(false);
+    setEditingStudent(null);
+    setSelectedIds([]);
+    loadStudents();
   };
 
-  // 👥 Asignar tutor en lote
-  const handleAssignTutorConfirm = (tutorId) => {
-    const tutor = mockTutors.find((t) => t.id === tutorId);
-
-    setStudents((prev) =>
-      prev.map((s) =>
-        selectedIds.includes(s.id)
-          ? {
-              ...s,
-              tutorId,
-              tutorNombre: tutor ? tutor.nombre : "Tutor asignado",
-            }
-          : s
-      )
-    );
-
+  const handleAfterAssign = () => {
     setShowAssignModal(false);
-    // podrías limpiar selección si quieres:
-    // setSelectedIds([]);
+    setSelectedIds([]);
+    loadStudents();
   };
 
+  // ---------------- RENDER ----------------
   return (
     <main className="page-container">
       <h1 className="page-title">Gestión de Estudiantes y Asignación de Tutores</h1>
 
-      {/* ---------------- FILTROS ---------------- */}
+      {/* FILTROS */}
       <StudentFilters
         filters={filters}
         onChange={handleFiltersChange}
         tutors={mockTutors}
       />
 
-      {/* ---------- BOTONES SUPERIORES ----------- */}
+      {/* MENSAJES DE ESTADO */}
+      {loading && <p>Cargando estudiantes...</p>}
+      {error && <p className="text-error">{error}</p>}
+
+      {/* ACCIONES SUPERIORES */}
       <div className="actions-row">
         <button
           className="btn btn-primary"
           onClick={() => {
-            setEditingStudent(null); // nuevo estudiante
+            setEditingStudent(null);
             setShowFormModal(true);
           }}
         >
@@ -162,7 +170,7 @@ export default function StudentsManagePage() {
         </button>
       </div>
 
-      {/* ---------------- TABLA ---------------- */}
+      {/* TABLA */}
       <StudentsTable
         data={paginatedStudents}
         selectedIds={selectedIds}
@@ -171,9 +179,9 @@ export default function StudentsManagePage() {
         onDelete={handleDelete}
       />
 
-      {/* ---------------- PAGINACIÓN ---------------- */}
+      {/* PAGINACIÓN */}
       <div className="pagination">
-        <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+        <button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
           ◀ Anterior
         </button>
 
@@ -181,41 +189,45 @@ export default function StudentsManagePage() {
           Página {page} de {totalPages}
         </span>
 
-        <button disabled={page === totalPages} onClick={() => setPage(page + 1)}>
+        <button
+          disabled={page === totalPages}
+          onClick={() => setPage((p) => p + 1)}
+        >
           Siguiente ▶
         </button>
       </div>
 
-      {/* ---------------- MODALES ---------------- */}
+      {/* MODAL ALTA / EDICIÓN */}
       {showFormModal && (
         <StudentFormModal
           student={editingStudent}
-          tutors={mockTutors}
-          onSave={handleSaveStudent}
           onClose={() => {
             setEditingStudent(null);
             setShowFormModal(false);
           }}
+          onSaved={handleAfterSave}
         />
       )}
 
+      {/* MODAL ELIMINAR */}
       {showDeleteModal && editingStudent && (
         <StudentDeleteModal
           student={editingStudent}
-          onConfirm={handleConfirmDelete}
           onClose={() => {
-            setEditingStudent(null);
             setShowDeleteModal(false);
+            setEditingStudent(null);
           }}
+          onDeleted={handleAfterDelete}
         />
       )}
 
+      {/* MODAL ASIGNAR TUTOR */}
       {showAssignModal && (
         <StudentAssignModal
           tutorList={mockTutors}
           selectedIds={selectedIds}
-          onAssign={handleAssignTutorConfirm}
           onClose={() => setShowAssignModal(false)}
+          onAssigned={handleAfterAssign}
         />
       )}
     </main>

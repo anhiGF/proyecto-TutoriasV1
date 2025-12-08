@@ -1,38 +1,73 @@
 // src/pages/Users/UsersListPage.jsx
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { mockUsers } from '../../mock/users.js';
-import Modal  from '../../components/ui/Modal.jsx';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Modal from "../../components/ui/Modal.jsx";
+import { UsersApi } from "../../api/usersApi";
 
 export function UsersListPage() {
-  const [users, setUsers] = useState(mockUsers);
-  const [filterRole, setFilterRole] = useState('TODOS');
-  const [filterStatus, setFilterStatus] = useState('TODOS');
-  const [modalUser, setModalUser] = useState(null); // para nuevo/editar
+  const [users, setUsers] = useState([]);
+  const [filterRole, setFilterRole] = useState("TODOS");
+  const [filterStatus, setFilterStatus] = useState("TODOS");
+  const [searchText, setSearchText] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // modal de crear/editar
+  const [modalUser, setModalUser] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   const navigate = useNavigate();
 
-  const filteredUsers = users.filter((u) => {
-    const byRole = filterRole === 'TODOS' || u.role === filterRole;
-    const byStatus = filterStatus === 'TODOS' || u.status === filterStatus;
-    return byRole && byStatus;
-  });
+  // ---- Cargar desde el backend ----
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
 
+      const params = {};
+      if (filterRole !== "TODOS") params.role = filterRole;
+      if (filterStatus !== "TODOS") params.status = filterStatus;
+      if (searchText.trim() !== "") params.search = searchText.trim();
+
+      const { data } = await UsersApi.list(params);
+      // Backend devuelve paginator { data: [...] }
+      setUsers(data.data ?? []);
+    } catch (err) {
+      console.error("Error cargando usuarios", err);
+      alert("Ocurrió un error al cargar la lista de usuarios.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // cargar al entrar y cuando cambien filtros
+  useEffect(() => {
+    fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterRole, filterStatus]);
+
+  const handleApplyFilters = (e) => {
+    e.preventDefault();
+    fetchUsers();
+  };
+
+  // ---- Modal nuevo / editar ----
   const openNewUserModal = () => {
     setModalUser({
       id: null,
-      name: '',
-      email: '',
-      role: 'TUTOR',
-      division: '',
-      status: 'ACTIVO',
+      name: "",
+      email: "",
+      role: "TUTOR",
+      division: "",
+      status: "ACTIVO",
+      password: "",
+      passwordConfirm: "",
     });
     setModalOpen(true);
   };
 
   const openEditUserModal = (user) => {
-    setModalUser({ ...user });
+    setModalUser({ ...user,
+    password: "",
+    passwordConfirm: "", });
     setModalOpen(true);
   };
 
@@ -41,31 +76,111 @@ export function UsersListPage() {
     setModalUser(null);
   };
 
-  const handleUserFormSubmit = (e) => {
+  const handleInputChange = (field, value) => {
+    setModalUser((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleUserFormSubmit = async (e) => {
     e.preventDefault();
     if (!modalUser) return;
 
     if (!modalUser.name || !modalUser.email) {
-      alert('Nombre y correo son obligatorios');
+      alert("Nombre y correo son obligatorios");
       return;
     }
 
-    if (modalUser.id == null) {
-      // nuevo
-      const newId = users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1;
-      setUsers((prev) => [...prev, { ...modalUser, id: newId }]);
-    } else {
-      // editar
-      setUsers((prev) =>
-        prev.map((u) => (u.id === modalUser.id ? modalUser : u))
-      );
+    // Validación frontend del nombre
+    const nameRegex = /^[a-zA-ZÁÉÍÓÚáéíóúÑñ ]+$/;
+
+    if (!nameRegex.test(modalUser.name)) {
+      alert("El nombre solo puede contener letras y espacios.");
+      return;
     }
 
-    closeUserModal();
+    if (modalUser.password || modalUser.passwordConfirm) {
+      if (modalUser.password !== modalUser.passwordConfirm) {
+        alert("La contraseña y la confirmación no coinciden.");
+        return;
+      }
+     }
+    try {
+      if (modalUser.id == null) {
+        // crear
+        const payload = {
+          name: modalUser.name,
+          email: modalUser.email,
+          role: modalUser.role,
+          division: modalUser.division,
+          status: modalUser.status,
+        password: modalUser.password,
+        password_confirmation: modalUser.passwordConfirm,
+        };
+
+        await UsersApi.create(payload);
+      } else {
+        // actualizar
+        const payload = {
+          name: modalUser.name,
+          email: modalUser.email,
+          role: modalUser.role,
+          division: modalUser.division,
+          status: modalUser.status,
+        };
+
+        if (modalUser.password) {
+        payload.password = modalUser.password;
+        payload.password_confirmation = modalUser.passwordConfirm;
+      }
+        await UsersApi.updateUser(modalUser.id, payload);
+      }
+
+      closeUserModal();
+      await fetchUsers();
+    } catch (err) {
+      console.error("Error guardando usuario", err);
+
+      if (err.response?.status === 422) {
+        const errors = err.response.data?.errors;
+        const msg =
+          errors && typeof errors === "object"
+            ? Object.values(errors).flat().join("\n")
+            : "Datos inválidos. Revisa el formulario.";
+        alert(msg);
+      } else {
+        alert("Ocurrió un error al guardar el usuario.");
+      }
+    }
   };
 
-  const handleInputChange = (field, value) => {
-    setModalUser((prev) => ({ ...prev, [field]: value }));
+  // ---- Reset pass ----
+ {/* const handleResetPassword = async (user) => {
+    if (!window.confirm(`¿Resetear contraseña de ${user.email}?`)) return;
+
+    try {
+      await UsersApi.resetPassword(user.id);
+      alert("Contraseña reseteada. Se generó una nueva contraseña temporal.");
+    } catch (err) {
+      console.error("Error al resetear contraseña", err);
+      alert("No se pudo resetear la contraseña.");
+    }
+  };*/}
+
+  // ---- Soft delete ----
+  const handleDeleteUser = async (user) => {
+    if (
+      !window.confirm(
+        `¿Eliminar (lógicamente) al usuario ${user.name} (${user.email})?`
+      )
+    )
+      return;
+
+    try {
+      await UsersApi.remove(user.id);
+      await fetchUsers();
+    } catch (err) {
+      console.error("Error al eliminar usuario", err);
+      alert("No se pudo eliminar el usuario.");
+    }
   };
 
   return (
@@ -76,12 +191,13 @@ export function UsersListPage() {
       </p>
 
       {/* Filtros */}
-      <div
+      <form
+        onSubmit={handleApplyFilters}
         style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          marginBottom: '1rem',
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "1rem",
+          marginBottom: "1rem",
         }}
       >
         <div>
@@ -112,107 +228,124 @@ export function UsersListPage() {
           </select>
         </div>
 
-        <div style={{ marginLeft: 'auto', alignSelf: 'flex-end' }}>
-          <button className="btn btn-primary" type="button" onClick={openNewUserModal}>
+        <div>
+          <label className="form-label">Buscar</label>
+          <input
+            className="form-input"
+            placeholder="Nombre o correo"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+        </div>
+
+        <div style={{ marginLeft: "auto", alignSelf: "flex-end" }}>
+          <button className="btn btn-secondary" type="submit">
+            Aplicar filtros
+          </button>
+        </div>
+
+        <div style={{ alignSelf: "flex-end" }}>
+          <button
+            className="btn btn-primary"
+            type="button"
+            onClick={openNewUserModal}
+          >
             Nuevo usuario
           </button>
         </div>
-      </div>
+      </form>
 
-      {/* Tabla de usuarios */}
-      <div style={{ overflowX: 'auto' }}>
-        <table
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            fontSize: '0.9rem',
-          }}
-        >
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: '0.5rem' }}>Nombre</th>
-              <th style={{ textAlign: 'left', padding: '0.5rem' }}>Correo</th>
-              <th style={{ textAlign: 'left', padding: '0.5rem' }}>Rol</th>
-              <th style={{ textAlign: 'left', padding: '0.5rem' }}>División</th>
-              <th style={{ textAlign: 'left', padding: '0.5rem' }}>Estado</th>
-              <th style={{ textAlign: 'left', padding: '0.5rem' }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.length === 0 ? (
+      {/* Tabla */}
+      <div style={{ overflowX: "auto" }}>
+        {loading ? (
+          <p>Cargando usuarios...</p>
+        ) : (
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: "0.9rem",
+            }}
+          >
+            <thead>
               <tr>
-                <td colSpan={6} style={{ padding: '0.5rem' }}>
-                  No se encontraron usuarios con los filtros seleccionados.
-                </td>
+                <th style={{ textAlign: "left", padding: "0.5rem" }}>Nombre</th>
+                <th style={{ textAlign: "left", padding: "0.5rem" }}>Correo</th>
+                <th style={{ textAlign: "left", padding: "0.5rem" }}>Rol</th>
+                <th style={{ textAlign: "left", padding: "0.5rem" }}>
+                  División
+                </th>
+                <th style={{ textAlign: "left", padding: "0.5rem" }}>
+                  Estado
+                </th>
+                <th style={{ textAlign: "left", padding: "0.5rem" }}>
+                  Acciones
+                </th>
               </tr>
-            ) : (
-              filteredUsers.map((u) => (
-                <tr key={u.id}>
-                  <td style={{ padding: '0.5rem' }}>{u.name}</td>
-                  <td style={{ padding: '0.5rem' }}>{u.email}</td>
-                  <td style={{ padding: '0.5rem' }}>{u.role}</td>
-                  <td style={{ padding: '0.5rem' }}>{u.division}</td>
-                  <td style={{ padding: '0.5rem' }}>{u.status}</td>
-                  <td style={{ padding: '0.5rem' }}>
-                    <button
-                      className="btn btn-link"
-                      type="button"
-                      onClick={() => navigate(`/usuarios/${u.id}`)}
-                    >
-                      Ver
-                    </button>
-                    {' · '}
-                    <button
-                      className="btn btn-link"
-                      type="button"
-                      onClick={() => openEditUserModal(u)}
-                    >
-                      Editar
-                    </button>
+            </thead>
+            <tbody>
+              {users.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ padding: "0.5rem" }}>
+                    No se encontraron usuarios con los filtros seleccionados.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                users.map((u) => (
+                  <tr key={u.id}>
+                    <td style={{ padding: "0.5rem" }}>{u.name}</td>
+                    <td style={{ padding: "0.5rem" }}>{u.email}</td>
+                    <td style={{ padding: "0.5rem" }}>{u.role}</td>
+                    <td style={{ padding: "0.5rem" }}>{u.division}</td>
+                    <td style={{ padding: "0.5rem" }}>{u.status}</td>
+                    <td style={{ padding: "0.5rem" }}>
+                      <button
+                        className="btn btn-link"
+                        type="button"
+                        onClick={() => navigate(`/usuarios/${u.id}`)}
+                      >
+                        Ver
+                      </button>
+                      {" · "}
+                      <button
+                        className="btn btn-link"
+                        type="button"
+                        onClick={() => openEditUserModal(u)}
+                      >
+                        Editar
+                      </button>
+                      {" · "}
+                      
+                    {/* <button
+                        className="btn btn-link"
+                        type="button"
+                        onClick={() => handleResetPassword(u)}
+                      >
+                        Reset pass
+                      </button>
+                      {" · "}*/}
+                      <button
+                        className="btn btn-link text-danger"
+                        type="button"
+                        onClick={() => handleDeleteUser(u)}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* Modal para alta/edición de usuario */}
-      <Modal
-        isOpen={modalOpen}
-        title={modalUser?.id ? 'Editar usuario' : 'Nuevo usuario'}
-        type="info"
-        onClose={closeUserModal}
-        actions={
-          <>
-            <button className="btn btn-link" type="button" onClick={closeUserModal}>
-              Cancelar
-            </button>
-            <button
-              className="btn btn-primary"
-              type="button"
-              onClick={handleUserFormSubmit}
-            >
-              Guardar
-            </button>
-          </>
-        }
-        message={null} // usamos contenido personalizado abajo
-      >
-        {/* OJO: nuestro Modal actual no admite children; si quisieras contenido dentro, habría que adaptarlo.
-            Para no complicar, metimos el formulario abajo usando otra técnica.
-        */}
-      </Modal>
-
-      {/* Como nuestro Modal actual solo muestra title/message, 
-          la forma sencilla es hacer un "modal" propio para el formulario.
-          Si prefieres que el formulario esté dentro del popup de arriba,
-          luego adaptamos el componente Modal para que acepte children. */}
+      {/* Modal de formulario */}
       {modalOpen && modalUser && (
         <div className="modal-overlay">
           <div className="modal modal-info">
             <h2 className="modal-title">
-              {modalUser.id ? 'Editar usuario' : 'Nuevo usuario'}
+              {modalUser.id ? "Editar usuario" : "Nuevo usuario"}
             </h2>
 
             <form className="form" onSubmit={handleUserFormSubmit}>
@@ -221,7 +354,7 @@ export function UsersListPage() {
                 <input
                   className="form-input"
                   value={modalUser.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
                   required
                 />
               </div>
@@ -232,8 +365,35 @@ export function UsersListPage() {
                   className="form-input"
                   type="email"
                   value={modalUser.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
                   required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Contraseña</label>
+                <input
+                  className="form-input"
+                  type="password"
+                  value={modalUser.password ?? ""}
+                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  placeholder={
+                    modalUser.id
+                      ? "Deja en blanco para no cambiarla"
+                      : "Mín. 8 caracteres, 2 números..."
+                  }
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Confirmar contraseña</label>
+                <input
+                  className="form-input"
+                  type="password"
+                  value={modalUser.passwordConfirm ?? ""}
+                  onChange={(e) =>
+                    handleInputChange("passwordConfirm", e.target.value)
+                  }
                 />
               </div>
 
@@ -242,7 +402,7 @@ export function UsersListPage() {
                 <select
                   className="form-input"
                   value={modalUser.role}
-                  onChange={(e) => handleInputChange('role', e.target.value)}
+                  onChange={(e) => handleInputChange("role", e.target.value)}
                 >
                   <option value="COORDINACION">Coordinación</option>
                   <option value="JEFE_DIVISION">Jefe de División</option>
@@ -256,7 +416,9 @@ export function UsersListPage() {
                 <input
                   className="form-input"
                   value={modalUser.division}
-                  onChange={(e) => handleInputChange('division', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("division", e.target.value)
+                  }
                 />
               </div>
 
@@ -265,7 +427,7 @@ export function UsersListPage() {
                 <select
                   className="form-input"
                   value={modalUser.status}
-                  onChange={(e) => handleInputChange('status', e.target.value)}
+                  onChange={(e) => handleInputChange("status", e.target.value)}
                 >
                   <option value="ACTIVO">Activo</option>
                   <option value="INACTIVO">Inactivo</option>

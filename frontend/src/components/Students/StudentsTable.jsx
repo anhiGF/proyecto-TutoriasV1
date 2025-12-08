@@ -2,7 +2,7 @@
 import React from "react";
 
 export default function StudentsTable({
-  data = [],                // 👈 viene de paginatedStudents
+  data = [],
   selectedIds = [],
   setSelectedIds,
   onEdit,
@@ -29,8 +29,7 @@ export default function StudentsTable({
   };
 
   const allChecked =
-    students.length > 0 &&
-    students.every((s) => selectedIds.includes(s.id));
+    students.length > 0 && students.every((s) => selectedIds.includes(s.id));
 
   return (
     <div className="card" style={{ marginTop: "1.5rem" }}>
@@ -65,39 +64,46 @@ export default function StudentsTable({
               </tr>
             )}
 
-            {students.map((st) => (
-              <tr key={st.id}>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(st.id)}
-                    onChange={() => handleToggleOne(st.id)}
-                  />
-                </td>
-                <td>{st.numControl}</td>
-                <td>{st.nombre}</td>
-                <td>{st.carrera}</td>
-                <td>{st.semestre}</td>
-                <td>{st.periodo}</td>
-                <td>{st.tutorNombre || "Sin asignar"}</td>
-                <td style={{ textAlign: "right" }}>
-                  <button
-                    type="button"
-                    className="btn btn-link"
-                    onClick={() => onEdit && onEdit(st)}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-link text-danger"
-                    onClick={() => onDelete && onDelete(st)}
-                  >
-                    Eliminar
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {students.map((st) => {
+              // Soporta tanto snake_case como camelCase
+              const tutorNombre =
+                st.tutor_nombre ?? st.tutorNombre ?? "Sin asignar";
+              const numControl = st.num_control ?? st.numControl;
+
+              return (
+                <tr key={st.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(st.id)}
+                      onChange={() => handleToggleOne(st.id)}
+                    />
+                  </td>
+                  <td>{numControl}</td>
+                  <td>{st.nombre}</td>
+                  <td>{st.carrera}</td>
+                  <td>{st.semestre}</td>
+                  <td>{st.periodo}</td>
+                  <td>{tutorNombre}</td>
+                  <td style={{ textAlign: "right" }}>
+                    <button
+                      type="button"
+                      className="btn btn-link"
+                      onClick={() => onEdit && onEdit(st)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-link text-danger"
+                      onClick={() => onDelete && onDelete(st)}
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
