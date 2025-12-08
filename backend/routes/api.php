@@ -18,7 +18,7 @@ use App\Http\Controllers\AuthController;
 Route::get('/ping', function () {
     return response()->json(['message' => 'API OK']);
 });
-
+ Route::get('/users',              [UserController::class, 'index']);
 // ---------- Auth ----------
 Route::post('/auth/login', [AuthController::class, 'login']);
 // Recuperar / resetear contraseña por correo
@@ -34,7 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/students/{id}', [StudentController::class, 'destroy']);
     Route::post('/students/assign-tutor', [StudentController::class, 'assignTutor']);
     // ---------- Users ----------
-    Route::get('/users',              [UserController::class, 'index']);
+   
     Route::post('/users',             [UserController::class, 'store']);
     Route::get('/users/{id}',         [UserController::class, 'show']);
     Route::put('/users/{id}',         [UserController::class, 'update']);
