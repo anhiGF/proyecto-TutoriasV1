@@ -51,7 +51,7 @@ pipeline {
             }
         }
 
-
+  
         stage('Frontend - npm install & build') {
             steps {
                 dir('frontend') {
