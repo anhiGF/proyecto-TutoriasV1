@@ -26,18 +26,20 @@ pipeline {
             steps {
                 dir('backend') {
                     bat """
-                        rem === Preparar .env para las pruebas en Jenkins ===
+                        rem === Preparar .env para pruebas ===
                         if not exist .env copy .env.example .env
 
-                        rem Generar APP_KEY sólo para este workspace de Jenkins
                         php artisan key:generate
 
-                        rem Ahora sí correr las pruebas
-                        php artisan test
+                        rem Ejecutar PHPUnit con coverage
+                        vendor\\bin\\phpunit ^
+                        --log-junit build\\logs\\junit.xml ^
+                        --coverage-clover build\\logs\\coverage.xml
                     """
                 }
             }
         }
+
 
             stage('SonarQube Analysis') {
             steps {
