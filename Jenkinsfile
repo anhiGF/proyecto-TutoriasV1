@@ -22,23 +22,27 @@ pipeline {
             }
         }
 
-        stage('Backend - Pruebas') {
-            steps {
-                dir('backend') {
-                    bat """
-                        rem === Preparar .env para pruebas ===
-                        if not exist .env copy .env.example .env
+            stage('Backend - Pruebas') {
+                steps {
+                    dir('backend') {
+                        bat """
+                            rem === Preparar .env para las pruebas en Jenkins ===
+                            if not exist .env copy .env.example .env
 
-                        php artisan key:generate
+                            rem Generar APP_KEY solo si hace falta
+                            php artisan key:generate
 
-                        rem Ejecutar PHPUnit con coverage
-                        vendor\\bin\\phpunit ^
-                        --log-junit build\\logs\\junit.xml ^
-                        --coverage-clover build\\logs\\coverage.xml
-                    """
+                            rem Crear carpetas para los reportes de PHPUnit
+                            if not exist build mkdir build
+                            if not exist build\\logs mkdir build\\logs
+
+                            rem Ejecutar pruebas con reporte JUnit + cobertura Clover para SonarQube
+                            rem (los -- después de test son IMPORTANTES: separan opciones de Artisan y PHPUnit)
+                            php artisan test -- --log-junit=build\\logs\\junit.xml --coverage-clover=build\\logs\\coverage.xml
+                        """
+                    }
                 }
             }
-        }
 
 
             stage('SonarQube Analysis') {
