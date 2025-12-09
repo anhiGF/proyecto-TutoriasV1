@@ -39,6 +39,21 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    // Usar la configuración del servidor SonarQube llamado "SonarQubeLocal"
+                    withSonarQubeEnv('SonarQubeLocal') {
+                        // Usar la instalación del scanner llamada "SonarScanner"
+                        def scannerHome = tool 'SonarScanner'
+
+                        // Ejecutar el scanner desde la raíz del repo
+                        bat "\"%scannerHome%\\bin\\sonar-scanner.bat\""
+                    }
+                }
+            }
+        }
+
         stage('Frontend - npm install & build') {
             steps {
                 dir('frontend') {
@@ -48,16 +63,13 @@ pipeline {
             }
         }
 
-        //Deploy backend SIEMPRE que la pipeline llegue hasta aquí
         stage('Deploy Backend (Render)') {
             steps {
                 echo "Disparando deploy del BACKEND en Render..."
-                // Necesitas tener curl en el agente (viene con Git for Windows, por ejemplo)
                 bat "curl -X POST \"%RENDER_BACKEND_HOOK%\""
             }
         }
 
-        // Deploy frontend SIEMPRE que la pipeline llegue hasta aquí
         stage('Deploy Frontend (Render)') {
             steps {
                 echo "Disparando deploy del FRONTEND en Render..."
@@ -71,10 +83,10 @@ pipeline {
             echo "Pipeline finalizado."
         }
         success {
-            echo "CI/CD OK (tests + build + deploy a Render)."
+            echo "✅ CI/CD OK (tests + SonarQube + build + deploy a Render)."
         }
         failure {
-            echo "Algo falló en la pipeline, revisa la consola."
+            echo "❌ Algo falló en la pipeline, revisa la consola."
         }
     }
 }
