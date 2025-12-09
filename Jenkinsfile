@@ -22,36 +22,44 @@ pipeline {
             }
         }
 
-            stage('Backend - Pruebas') {
-                steps {
+        stage('Backend - Pruebas') {
+            steps {
+                dir('backend') {
+                    bat """
+                        rem === Preparar .env para las pruebas en Jenkins ===
+                        if not exist .env copy .env.example .env
+
+                        rem Generar APP_KEY (seguro para pruebas)
+                        php artisan key:generate --force
+
+                        rem Carpetas para reportes
+                        if not exist build mkdir build
+                        if not exist build\\logs mkdir build\\logs
+
+                        rem Ejecutar PHPUnit CON reportes para Jenkins/SonarQube
+                        vendor\\bin\\phpunit ^
+                          --log-junit=build\\logs\\junit.xml ^
+                          --coverage-clover=build\\logs\\coverage.xml
+                    """
+                }
+
+                // Publicar resultado de pruebas en Jenkins
+                junit 'backend/build/logs/junit.xml'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube-local') {
                     dir('backend') {
                         bat """
-                            rem === Preparar .env para las pruebas en Jenkins ===
-                            if not exist .env copy .env.example .env
-
-                            rem Generar APP_KEY solo si hace falta
-                            php artisan key:generate
-
-                            rem Crear carpetas para los reportes de PHPUnit
-                            if not exist build mkdir build
-                            if not exist build\\logs mkdir build\\logs
-
-                            rem Ejecutar pruebas con reporte JUnit + cobertura Clover para SonarQube
-                            rem (los -- después de test son IMPORTANTES: separan opciones de Artisan y PHPUnit)
-                            php artisan test -- --log-junit=build\\logs\\junit.xml --coverage-clover=build\\logs\\coverage.xml
+                            sonar-scanner ^
+                              -Dsonar.projectKey=tutorias-itsj ^
+                              -Dsonar.projectName="Tutorías ITSJ" ^
+                              -Dsonar.sources=app ^
+                              -Dsonar.tests=tests ^
+                              -Dsonar.php.coverage.reportPaths=build\\logs\\coverage.xml
                         """
-                    }
-                }
-            }
-
-
-            stage('SonarQube Analysis') {
-            steps {
-                script {
-                    withSonarQubeEnv('SonarQubeLocal') {
-                        def scannerHome = tool 'SonarScanner'
-
-                        bat "\"${scannerHome}\\bin\\sonar-scanner.bat\""
                     }
                 }
             }
