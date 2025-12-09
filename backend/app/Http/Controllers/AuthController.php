@@ -55,7 +55,7 @@ class AuthController extends Controller
             'token' => $token,
         ]);
     }
-
+ 
     /**
      * POST /api/auth/logout
      */
