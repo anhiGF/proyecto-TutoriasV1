@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Hooks de Render (salen de las credenciales de Jenkins)
+        // Hooks de Render (credenciales tipo Secret text en Jenkins)
         RENDER_BACKEND_HOOK  = credentials('render-backend-hook')
         RENDER_FRONTEND_HOOK = credentials('render-frontend-hook')
     }
@@ -39,7 +39,6 @@ pipeline {
             }
         }
 
-
         stage('Frontend - npm install & build') {
             steps {
                 dir('frontend') {
@@ -49,21 +48,17 @@ pipeline {
             }
         }
 
+        //Deploy backend SIEMPRE que la pipeline llegue hasta aquí
         stage('Deploy Backend (Render)') {
-            when {
-                branch 'master'
-            }
             steps {
                 echo "Disparando deploy del BACKEND en Render..."
-                // Necesitas tener curl en el agente (viene con Git para Windows)
+                // Necesitas tener curl en el agente (viene con Git for Windows, por ejemplo)
                 bat "curl -X POST \"%RENDER_BACKEND_HOOK%\""
             }
         }
 
+        // Deploy frontend SIEMPRE que la pipeline llegue hasta aquí
         stage('Deploy Frontend (Render)') {
-            when {
-                branch 'master'
-            }
             steps {
                 echo "Disparando deploy del FRONTEND en Render..."
                 bat "curl -X POST \"%RENDER_FRONTEND_HOOK%\""
@@ -76,7 +71,7 @@ pipeline {
             echo "Pipeline finalizado."
         }
         success {
-            echo "I/CD OK (tests + build + deploy a Render)."
+            echo "CI/CD OK (tests + build + deploy a Render)."
         }
         failure {
             echo "Algo falló en la pipeline, revisa la consola."
