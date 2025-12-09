@@ -32,6 +32,7 @@ export function MainLayout({ children }) {
   // Siempre mostrar Inicio
 
     navLinks.push({ to: '/', label: 'Inicio' });
+    
   if (!isAuthenticated) {
     navLinks.push({ to: '/login', label: 'Iniciar sesión' });
   } else {
