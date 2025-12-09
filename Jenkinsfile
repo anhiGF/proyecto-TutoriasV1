@@ -39,20 +39,18 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
+            stage('SonarQube Analysis') {
             steps {
                 script {
-                    // Usar la configuración del servidor SonarQube llamado "SonarQubeLocal"
                     withSonarQubeEnv('SonarQubeLocal') {
-                        // Usar la instalación del scanner llamada "SonarScanner"
                         def scannerHome = tool 'SonarScanner'
 
-                        // Ejecutar el scanner desde la raíz del repo
-                        bat "\"%scannerHome%\\bin\\sonar-scanner.bat\""
+                        bat "\"${scannerHome}\\bin\\sonar-scanner.bat\""
                     }
                 }
             }
         }
+
 
         stage('Frontend - npm install & build') {
             steps {
