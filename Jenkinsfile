@@ -83,10 +83,10 @@ pipeline {
             echo "Pipeline finalizado."
         }
         success {
-            echo "✅ CI/CD OK (tests + SonarQube + build + deploy a Render)."
+            echo "CI/CD OK (tests + SonarQube + build + deploy a Render)."
         }
         failure {
-            echo "❌ Algo falló en la pipeline, revisa la consola."
+            echo "Algo falló en la pipeline, revisa la consola."
         }
     }
 }
