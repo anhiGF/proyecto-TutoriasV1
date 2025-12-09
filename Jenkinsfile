@@ -25,10 +25,20 @@ pipeline {
         stage('Backend - Pruebas') {
             steps {
                 dir('backend') {
-                    bat 'php artisan test'
+                    bat """
+                        rem === Preparar .env para las pruebas en Jenkins ===
+                        if not exist .env copy .env.example .env
+
+                        rem Generar APP_KEY sólo para este workspace de Jenkins
+                        php artisan key:generate
+
+                        rem Ahora sí correr las pruebas
+                        php artisan test
+                    """
                 }
             }
         }
+
 
         stage('Frontend - npm install & build') {
             steps {
