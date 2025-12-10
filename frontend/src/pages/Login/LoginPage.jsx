@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import Modal from '../../components/ui/Modal.jsx';
-import ReCAPTCHA from "react-google-recaptcha";
+import ReCAPTCHA from 'react-google-recaptcha';
 
 function defaultRouteByRole(role) {
   switch (role) {
@@ -52,12 +52,27 @@ export function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validar captcha primero
+    // 1) Validar captcha primero
     if (!captchaToken) {
       setCaptchaError('Por favor, confirma que no eres un robot.');
+
+      // Abrir modal avisando que falta el captcha
+      setModal({
+        open: true,
+        title: 'Verificación requerida',
+        message: 'Por favor completa el reCAPTCHA antes de iniciar sesión.',
+        type: 'error', // o 'warning' según tus estilos
+      });
+
+      // Cerrar el modal automáticamente después de 1.5 segundos
+      setTimeout(() => {
+        closeModal();
+      }, 1500);
+
       return;
     }
- 
+
+    // 2) Si sí hay captcha, ya intentamos el login normal
     try {
       const user = await login(email, password);
 
@@ -125,21 +140,16 @@ export function LoginPage() {
 
           {/* reCAPTCHA */}
           <div className="form-group" style={{ marginTop: '1rem' }}>
-            <ReCAPTCHA
-              sitekey={siteKey}
-              onChange={handleCaptchaChange}
-            />
+            <ReCAPTCHA sitekey={siteKey} onChange={handleCaptchaChange} />
             {captchaError && (
-              <p style={{ color: 'red', fontSize: '0.85rem' }}>
-                {captchaError}
-              </p>
+              <p style={{ color: 'red', fontSize: '0.85rem' }}>{captchaError}</p>
             )}
           </div>
 
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={!captchaToken}  // evita enviar sin captcha
+            disabled={!captchaToken} // evita enviar sin captcha
           >
             Ingresar
           </button>
