@@ -14,31 +14,31 @@ RUN apt-get update && apt-get install -y \
     curl \
     && docker-php-ext-install zip pdo pdo_mysql pdo_pgsql
 
-# 2) Xdebug (para pruebas / cobertura)
+# 2) Xdebug (para cobertura de PHPUnit)
 RUN pecl install xdebug \
     && docker-php-ext-enable xdebug
 
-# Config Xdebug (puedes tunear luego)
+# Opcional: config extra de Xdebug (si tienes archivo)
 COPY xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 
 # 3) Composer dentro del contenedor
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 4) Código del backend
+# 4) Código del backend (este Dockerfile debe estar dentro de /backend)
 WORKDIR /var/www/html
 COPY . .
 
-# Permisos Laravel
+# 5) Permisos para Laravel
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# 5) Dependencias PHP
+# 6) Dependencias PHP
 RUN composer install --no-interaction --prefer-dist
 
-# 6) Generar APP_KEY (si no existe)
+# 7) Generar APP_KEY (no truena si ya existe)
 RUN php artisan key:generate || true
 
-# 7) Habilitar rewrite
+# 8) Habilitar mod_rewrite para rutas bonitas
 RUN a2enmod rewrite
 
 EXPOSE 80
