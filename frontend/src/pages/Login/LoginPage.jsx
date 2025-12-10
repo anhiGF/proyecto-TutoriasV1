@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import  Modal  from '../../components/ui/Modal.jsx';
 
+import ReCAPTCHA from 'react-google-recaptcha';
+
 function defaultRouteByRole(role) {
   switch (role) {
     case 'COORDINACION':
@@ -19,9 +21,15 @@ function defaultRouteByRole(role) {
   }
 }
 
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+const CAPTCHA_ENABLED = Boolean(RECAPTCHA_SITE_KEY);
+
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const [captchaToken, setCaptchaToken] = useState(null);
+
   const [modal, setModal] = useState({
     open: false,
     title: '',
@@ -40,8 +48,21 @@ export function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Si el captcha está habilitado y no se ha resuelto, mostramos error
+    if (CAPTCHA_ENABLED && !captchaToken) {
+      setModal({
+        open: true,
+        title: 'Verificación requerida',
+        message: 'Por favor, completa el captcha antes de iniciar sesión.',
+        type: 'error',
+      });
+      return;
+    }
+
     try {
-      const user = await login(email, password);
+      //capcha aqui abajito
+      const user = await login(email, password, captchaToken);
 
       const target = defaultRouteByRole(user.role);
 
@@ -104,6 +125,16 @@ export function LoginPage() {
               placeholder="••••••••"
             />
           </div>
+
+          {/* Captcha solo si hay SITE_KEY configurado */}
+          {CAPTCHA_ENABLED && (
+            <div className="form-group" style={{ marginTop: '0.75rem' }}>
+              <ReCAPTCHA
+                sitekey={RECAPTCHA_SITE_KEY}
+                onChange={(token) => setCaptchaToken(token)}
+              />
+            </div>
+          )}
 
           <button className="btn btn-primary" type="submit">
             Ingresar

@@ -25,6 +25,9 @@
     <!-- BD solo para pruebas, en memoria -->
     <env name="DB_CONNECTION" value="sqlite"/>
     <env name="DB_DATABASE" value=":memory:"/>
+    
+    <env name="RECAPTCHA_ENABLED" value="false"/>
+
 </php>
 
 </phpunit>

@@ -33,10 +33,12 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(initial.user);
   const [token, setToken] = useState(initial.token);
 
-  const login = async (email, password) => {
+ // 👇 AHORA RECIBE recaptchaToken
+  const login = async (email, password, recaptchaToken) => {
     try {
 
-    const data = await AuthApi.login(email, password);
+      // 👇 se lo pasamos a la API
+    const data = await AuthApi.login(email, password, recaptchaToken);
 
     const userFromApi = data.user ?? data;
     const tokenFromApi = data.token ?? null;

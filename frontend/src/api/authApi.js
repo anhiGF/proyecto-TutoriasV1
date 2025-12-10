@@ -3,8 +3,8 @@ import http from "./http";
 
 
 export const AuthApi = {
-  login: (email, password) =>
-    http.post("/auth/login", { email, password }).then((res) => res.data),
+  login: (email, password, recaptchaToken) =>
+    http.post("/auth/login", { email, password, recaptcha_token: recaptchaToken,}).then((res) => res.data),
 
   logout: () => http.post("/auth/logout"),
 

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Laravel\Sanctum\Sanctum;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
@@ -19,7 +20,45 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email'    => ['required', 'email'],
             'password' => ['required', 'string'],
+
+            'recaptcha_token' => ['nullable', 'string'], // lo recibimos igual
+
         ]);
+
+// 2) Verificación de reCAPTCHA (solo si está habilitado)
+    if (config('services.recaptcha.enabled')) {
+        $token = $credentials['recaptcha_token'] ?? null;
+
+        if (!$token) {
+            return response()->json([
+                'message' => 'Falta completar la verificación de seguridad (captcha).',
+            ], 422);
+        }
+
+        $googleResponse = Http::asForm()->post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            [
+                'secret'   => config('services.recaptcha.secret'),
+                'response' => $token,
+                'remoteip' => $request->ip(),
+            ]
+        );
+
+        if (!$googleResponse->ok()) {
+            return response()->json([
+                'message' => 'No se pudo verificar el captcha. Intenta nuevamente.',
+            ], 422);
+        }
+
+        $body = $googleResponse->json();
+
+        if (empty($body['success']) || $body['success'] !== true) {
+            return response()->json([
+                'message' => 'Verificación de seguridad fallida. Intenta de nuevo.',
+            ], 422);
+        }
+
+    }
 
         /** @var \App\Models\User|null $user */
         $user = User::where('email', $credentials['email'])->first();
