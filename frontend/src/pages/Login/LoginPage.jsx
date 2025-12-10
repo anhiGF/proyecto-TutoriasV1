@@ -54,14 +54,13 @@ export function LoginPage() {
 
     // 1) Validar captcha primero
     if (!captchaToken) {
-      setCaptchaError('Por favor, confirma que no eres un robot.');
 
       // Abrir modal avisando que falta el captcha
       setModal({
         open: true,
-        title: 'Verificación requerida',
+        title: 'Verificacion requerida',
         message: 'Por favor completa el reCAPTCHA antes de iniciar sesión.',
-        type: 'error', // o 'warning' según tus estilos
+        type: 'error', 
       });
 
       // Cerrar el modal automáticamente después de 1.5 segundos
