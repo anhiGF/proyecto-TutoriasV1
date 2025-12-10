@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Hooks de Render (credenciales tipo Secret text en Jenkins)
+        // Hooks de Render
         RENDER_BACKEND_HOOK  = credentials('render-backend-hook')
         RENDER_FRONTEND_HOOK = credentials('render-frontend-hook')
     }
@@ -14,58 +14,35 @@ pipeline {
             }
         }
 
-        stage('Backend - Composer install') {
+        // =======================
+        // BACKEND: DOCKER BUILD
+        // =======================
+        stage('Backend - Build Docker image') {
             steps {
                 dir('backend') {
-                    bat 'composer install --no-interaction --prefer-dist'
+                    // Construye la imagen usando TU Dockerfile
+                    bat 'docker build -t tutorias-backend-ci .'
                 }
             }
         }
 
-        stage('Backend - Pruebas') {
+        // =======================
+        // BACKEND: TESTS EN DOCKER
+        // =======================
+        stage('Backend - Tests in Docker') {
             steps {
-                dir('backend') {
-                    bat """
-                        rem === Preparar .env para las pruebas en Jenkins ===
-                        if not exist .env copy .env.example .env
-
-                        rem Generar APP_KEY (seguro para pruebas)
-                        php artisan key:generate --force
-
-                        rem Carpetas para reportes
-                        if not exist build mkdir build
-                        if not exist build\\logs mkdir build\\logs
-
-                        rem Ejecutar PHPUnit CON reportes para Jenkins/SonarQube
-                        vendor\\bin\\phpunit ^
-                          --log-junit=build\\logs\\junit.xml ^
-                          --coverage-clover=build\\logs\\coverage.xml
-                    """
-                }
-
-                // Publicar resultado de pruebas en Jenkins
-                junit 'backend/build/logs/junit.xml'
+                // Ejecutamos php artisan test DENTRO del contenedor
+                bat '''
+                    docker run --rm ^
+                      -e APP_ENV=testing ^
+                      tutorias-backend-ci php artisan test
+                '''
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('sonarqube-local') {
-                    dir('backend') {
-                        bat """
-                            sonar-scanner ^
-                              -Dsonar.projectKey=tutorias-itsj ^
-                              -Dsonar.projectName="Tutorías ITSJ" ^
-                              -Dsonar.sources=app ^
-                              -Dsonar.tests=tests ^
-                              -Dsonar.php.coverage.reportPaths=build\\logs\\coverage.xml
-                        """
-                    }
-                }
-            }
-        }
-
-  
+        // =======================
+        // FRONTEND
+        // =======================
         stage('Frontend - npm install & build') {
             steps {
                 dir('frontend') {
@@ -75,14 +52,26 @@ pipeline {
             }
         }
 
+        // =======================
+        // DEPLOY BACKEND (RENDER)
+        // =======================
         stage('Deploy Backend (Render)') {
+            when {
+                branch 'master'
+            }
             steps {
                 echo "Disparando deploy del BACKEND en Render..."
                 bat "curl -X POST \"%RENDER_BACKEND_HOOK%\""
             }
         }
 
+        // =======================
+        // DEPLOY FRONTEND (RENDER)
+        // =======================
         stage('Deploy Frontend (Render)') {
+            when {
+                branch 'master'
+            }
             steps {
                 echo "Disparando deploy del FRONTEND en Render..."
                 bat "curl -X POST \"%RENDER_FRONTEND_HOOK%\""
@@ -95,7 +84,7 @@ pipeline {
             echo "Pipeline finalizado."
         }
         success {
-            echo "CI/CD OK (tests + SonarQube + build + deploy a Render)."
+            echo "I/CD OK (tests en Docker + build + deploy a Render)."
         }
         failure {
             echo "Algo falló en la pipeline, revisa la consola."

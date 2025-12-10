@@ -1,28 +1,46 @@
-# Imagen base con PHP y extensiones
-FROM php:8.2-fpm
+# Imagen base PHP 8.3 con Apache
+FROM php:8.3-apache
 
-# Instalar dependencias del sistema
+# 1) Dependencias del sistema
 RUN apt-get update && apt-get install -y \
-    git unzip curl \
-    libpng-dev libonig-dev libxml2-dev \
-    && docker-php-ext-install pdo pdo_mysql mbstring xml gd
+    git \
+    unzip \
+    nano \
+    libzip-dev \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libpq-dev \
+    curl \
+    && docker-php-ext-install zip pdo pdo_mysql pdo_pgsql
 
+# 2) Xdebug (para pruebas / cobertura)
+RUN pecl install xdebug \
+    && docker-php-ext-enable xdebug
 
-# Instalar Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Config Xdebug (puedes tunear luego)
+COPY xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 
-# Copiar archivos del proyecto
+# 3) Composer dentro del contenedor
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# 4) Código del backend
 WORKDIR /var/www/html
 COPY . .
 
-# Instalar dependencias
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+# Permisos Laravel
+RUN chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
-# Permisos
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# 5) Dependencias PHP
+RUN composer install --no-interaction --prefer-dist
 
-# Exponer puerto
-EXPOSE 8000
+# 6) Generar APP_KEY (si no existe)
+RUN php artisan key:generate || true
 
-# Comando para ejecutar Laravel
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# 7) Habilitar rewrite
+RUN a2enmod rewrite
+
+EXPOSE 80
+
+CMD ["apache2-foreground"]
