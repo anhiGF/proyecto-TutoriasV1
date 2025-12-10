@@ -100,7 +100,7 @@ pipeline {
         // ===========================
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonarqube-server') {
+                withSonarQubeEnv('SonarQubeLocal') {
                     bat """
                         echo === EJECUTANDO ANALISIS SONARQUBE ===
                         "%SONAR_SCANNER_HOME%\\bin\\sonar-scanner.bat" ^
