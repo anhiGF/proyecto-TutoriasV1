@@ -66,7 +66,7 @@ export function LoginPage() {
       // Cerrar el modal automáticamente después de 1.5 segundos
       setTimeout(() => {
         closeModal();
-      }, 1500);
+      }, 15000);
 
       return;
     }
