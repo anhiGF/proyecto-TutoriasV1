@@ -21,11 +21,11 @@ class AuthController extends Controller
             'email'    => ['required', 'email'],
             'password' => ['required', 'string'],
 
-            'recaptcha_token' => ['nullable', 'string'], // lo recibimos igual
+           // 'recaptcha_token' => ['nullable', 'string'],  lo recibimos igual
 
         ]);
 
-// 2) Verificación de reCAPTCHA (solo si está habilitado)
+/* 2) Verificación de reCAPTCHA (solo si está habilitado)
     if (config('services.recaptcha.enabled')) {
         $token = $credentials['recaptcha_token'] ?? null;
 
@@ -58,7 +58,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-    }
+    }*/
 
         /** @var \App\Models\User|null $user */
         $user = User::where('email', $credentials['email'])->first();

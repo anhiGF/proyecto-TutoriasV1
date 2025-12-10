@@ -2,9 +2,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import  Modal  from '../../components/ui/Modal.jsx';
-
-import ReCAPTCHA from 'react-google-recaptcha';
+import Modal from '../../components/ui/Modal.jsx';
+import ReCAPTCHA from "react-google-recaptcha";
 
 function defaultRouteByRole(role) {
   switch (role) {
@@ -21,14 +20,13 @@ function defaultRouteByRole(role) {
   }
 }
 
-const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
-const CAPTCHA_ENABLED = Boolean(RECAPTCHA_SITE_KEY);
-
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
   const [captchaToken, setCaptchaToken] = useState(null);
+  const [captchaError, setCaptchaError] = useState('');
+
+  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
   const [modal, setModal] = useState({
     open: false,
@@ -46,23 +44,22 @@ export function LoginPage() {
       open: false,
     }));
 
+  const handleCaptchaChange = (token) => {
+    setCaptchaToken(token);
+    setCaptchaError('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Si el captcha está habilitado y no se ha resuelto, mostramos error
-    if (CAPTCHA_ENABLED && !captchaToken) {
-      setModal({
-        open: true,
-        title: 'Verificación requerida',
-        message: 'Por favor, completa el captcha antes de iniciar sesión.',
-        type: 'error',
-      });
+    // Validar captcha primero
+    if (!captchaToken) {
+      setCaptchaError('Por favor, confirma que no eres un robot.');
       return;
     }
 
     try {
-      //capcha aqui abajito
-      const user = await login(email, password, captchaToken);
+      const user = await login(email, password);
 
       const target = defaultRouteByRole(user.role);
 
@@ -126,17 +123,24 @@ export function LoginPage() {
             />
           </div>
 
-          {/* Captcha solo si hay SITE_KEY configurado */}
-          {CAPTCHA_ENABLED && (
-            <div className="form-group" style={{ marginTop: '0.75rem' }}>
-              <ReCAPTCHA
-                sitekey={RECAPTCHA_SITE_KEY}
-                onChange={(token) => setCaptchaToken(token)}
-              />
-            </div>
-          )}
+          {/* reCAPTCHA */}
+          <div className="form-group" style={{ marginTop: '1rem' }}>
+            <ReCAPTCHA
+              sitekey={siteKey}
+              onChange={handleCaptchaChange}
+            />
+            {captchaError && (
+              <p style={{ color: 'red', fontSize: '0.85rem' }}>
+                {captchaError}
+              </p>
+            )}
+          </div>
 
-          <button className="btn btn-primary" type="submit">
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={!captchaToken}  // evita enviar sin captcha
+          >
             Ingresar
           </button>
         </form>
