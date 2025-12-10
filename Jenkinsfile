@@ -122,7 +122,6 @@ pipeline {
         // DEPLOYS A RENDER
         // ===========================
         stage('Deploy Backend (Render)') {
-            when { branch 'master' }
             steps {
                 bat """
                     echo === DISPARANDO DEPLOY BACKEND EN RENDER ===
@@ -132,7 +131,6 @@ pipeline {
         }
 
         stage('Deploy Frontend (Render)') {
-            when { branch 'master' }
             steps {
                 bat """
                     echo === DISPARANDO DEPLOY FRONTEND EN RENDER ===
