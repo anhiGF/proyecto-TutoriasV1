@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import  Modal  from '../../components/ui/Modal.jsx';
+import Modal from '../../components/ui/Modal.jsx';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 function defaultRouteByRole(role) {
   switch (role) {
@@ -22,6 +23,11 @@ function defaultRouteByRole(role) {
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [captchaToken, setCaptchaToken] = useState(null);
+  const [captchaError, setCaptchaError] = useState('');
+
+  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+
   const [modal, setModal] = useState({
     open: false,
     title: '',
@@ -38,8 +44,35 @@ export function LoginPage() {
       open: false,
     }));
 
+  const handleCaptchaChange = (token) => {
+    setCaptchaToken(token);
+    setCaptchaError('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 1) Validar captcha primero
+    if (!captchaToken) {
+      setCaptchaError('Por favor, confirma que no eres un robot.');
+
+      // Abrir modal avisando que falta el captcha
+      setModal({
+        open: true,
+        title: 'Verificación requerida',
+        message: 'Por favor completa el reCAPTCHA antes de iniciar sesión.',
+        type: 'error', // o 'warning' según tus estilos
+      });
+
+      // Cerrar el modal automáticamente después de 1.5 segundos
+      setTimeout(() => {
+        closeModal();
+      }, 1500);
+
+      return;
+    }
+
+    // 2) Si sí hay captcha, ya intentamos el login normal
     try {
       const user = await login(email, password);
 
@@ -105,7 +138,19 @@ export function LoginPage() {
             />
           </div>
 
-          <button className="btn btn-primary" type="submit">
+          {/* reCAPTCHA */}
+          <div className="form-group" style={{ marginTop: '1rem' }}>
+            <ReCAPTCHA sitekey={siteKey} onChange={handleCaptchaChange} />
+            {captchaError && (
+              <p style={{ color: 'red', fontSize: '0.85rem' }}>{captchaError}</p>
+            )}
+          </div>
+
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={!captchaToken} // evita enviar sin captcha
+          >
             Ingresar
           </button>
         </form>
