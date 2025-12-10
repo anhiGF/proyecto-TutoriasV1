@@ -2,8 +2,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import Modal from '../../components/ui/Modal.jsx';
-import ReCAPTCHA from 'react-google-recaptcha';
+import  Modal  from '../../components/ui/Modal.jsx';
 
 function defaultRouteByRole(role) {
   switch (role) {
@@ -23,11 +22,6 @@ function defaultRouteByRole(role) {
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [captchaToken, setCaptchaToken] = useState(null);
-  const [captchaError, setCaptchaError] = useState('');
-
-  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
-
   const [modal, setModal] = useState({
     open: false,
     title: '',
@@ -44,34 +38,8 @@ export function LoginPage() {
       open: false,
     }));
 
-  const handleCaptchaChange = (token) => {
-    setCaptchaToken(token);
-    setCaptchaError('');
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // 1) Validar captcha primero
-    if (!captchaToken) {
-
-      // Abrir modal avisando que falta el captcha
-      setModal({
-        open: true,
-        title: 'Verificacion requerida',
-        message: 'Por favor completa el reCAPTCHA antes de iniciar sesión.',
-        type: 'error', 
-      });
-
-      // Cerrar el modal automáticamente después de 1.5 segundos
-      setTimeout(() => {
-        closeModal();
-      }, 15000);
-
-      return;
-    }
-
-    // 2) Si sí hay captcha, ya intentamos el login normal
     try {
       const user = await login(email, password);
 
@@ -137,19 +105,7 @@ export function LoginPage() {
             />
           </div>
 
-          {/* reCAPTCHA */}
-          <div className="form-group" style={{ marginTop: '1rem' }}>
-            <ReCAPTCHA sitekey={siteKey} onChange={handleCaptchaChange} />
-            {captchaError && (
-              <p style={{ color: 'red', fontSize: '0.85rem' }}>{captchaError}</p>
-            )}
-          </div>
-
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={!captchaToken} // evita enviar sin captcha
-          >
+          <button className="btn btn-primary" type="submit">
             Ingresar
           </button>
         </form>
