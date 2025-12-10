@@ -80,20 +80,17 @@ pipeline {
         stage('Frontend - npm install & build') {
             steps {
                 dir('frontend') {
-                    bat """
-                        echo === INSTALANDO DEPENDENCIAS FRONTEND ===
-                        if exist node_modules (
-                          echo node_modules ya existe, saltando npm install...
-                        ) else (
-                          npm install
-                        )
+                    bat '''
+                        echo === INSTALANDO DEPENDENCIAS FRONTEND === 
+                        npm install
 
-                        echo === BUILD FRONTEND (Vite) ===
+                        echo === BUILD FRONTEND (Vite) === 
                         npm run build
-                    """
+                    '''
                 }
             }
         }
+
 
         // ===========================
         // SONARQUBE
