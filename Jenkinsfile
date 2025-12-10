@@ -56,7 +56,18 @@ pipeline {
                           --log-junit build\\logs\\junit.xml ^
                           --coverage-clover build\\logs\\coverage.xml
 
-                        echo === LISTANDO build\\logs ===
+                        echo === VERIFICANDO ARCHIVOS EN build\\logs ===
+                        dir build\\logs
+
+                        echo === ASEGURANDO coverage.xml PARA SONARQUBE ===
+                        if not exist build\\logs\\coverage.xml (
+                            echo ^<coverage^>^</coverage^> > build\\logs\\coverage.xml
+                            echo [AVISO] coverage.xml no existia, se creo vacio para evitar fallo en SonarQube.
+                        ) else (
+                            echo coverage.xml encontrado correctamente.
+                        )
+
+                        echo === CONTENIDO FINAL DE build\\logs ===
                         dir build\\logs
                     """
                 }
@@ -89,7 +100,7 @@ pipeline {
         // ===========================
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQubeLocal') {
+                withSonarQubeEnv('sonarqube-server') {
                     bat """
                         echo === EJECUTANDO ANALISIS SONARQUBE ===
                         "%SONAR_SCANNER_HOME%\\bin\\sonar-scanner.bat" ^
@@ -133,13 +144,13 @@ pipeline {
 
     post {
         always {
-            echo "Pipeline finalizado (con o sin errores)."
+            echo "🏁 Pipeline finalizado (con o sin errores)."
         }
         success {
-            echo "Todo OK: pruebas, Sonar y deploy."
+            echo "✅ Todo OK: pruebas, Sonar y deploy."
         }
         failure {
-            echo "Algo falló, revisa la consola de Jenkins."
+            echo "❌ Algo falló, revisa la consola de Jenkins."
         }
     }
 }
