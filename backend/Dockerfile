@@ -14,31 +14,35 @@ RUN apt-get update && apt-get install -y \
     curl \
     && docker-php-ext-install zip pdo pdo_mysql pdo_pgsql
 
-# 2) Xdebug (para cobertura de PHPUnit)
+# 2) Xdebug (para pruebas / cobertura)
 RUN pecl install xdebug \
     && docker-php-ext-enable xdebug
 
-# Opcional: config extra de Xdebug (si tienes archivo)
+# Config Xdebug
 COPY xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 
 # 3) Composer dentro del contenedor
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 4) Código del backend (este Dockerfile debe estar dentro de /backend)
+# 4) Código del backend (Laravel)
 WORKDIR /var/www/html
 COPY . .
 
-# 5) Permisos para Laravel
+# 4.1 Cambiar DocumentRoot a /var/www/html/public  🔴 IMPORTANTE
+RUN sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
+    && sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/default-ssl.conf || true
+
+# 5) Permisos Laravel
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
 # 6) Dependencias PHP
-RUN composer install --no-interaction --prefer-dist
+RUN composer install --no-interaction --prefer-dist --no-dev
 
-# 7) Generar APP_KEY (no truena si ya existe)
+# 7) Generar APP_KEY (si no existe)
 RUN php artisan key:generate || true
 
-# 8) Habilitar mod_rewrite para rutas bonitas
+# 8) Habilitar rewrite
 RUN a2enmod rewrite
 
 EXPOSE 80
