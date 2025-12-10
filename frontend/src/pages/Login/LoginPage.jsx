@@ -57,7 +57,7 @@ export function LoginPage() {
       setCaptchaError('Por favor, confirma que no eres un robot.');
       return;
     }
-
+ 
     try {
       const user = await login(email, password);
 
