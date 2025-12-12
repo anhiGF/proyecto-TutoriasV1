@@ -61,7 +61,7 @@ export function LoginPage() {
         open: true,
         title: 'Verificación requerida',
         message: 'Por favor completa el reCAPTCHA antes de iniciar sesión.',
-        type: 'error', // o 'warning' según tus estilos
+        type: 'error', 
       });
 
       // Cerrar el modal automáticamente después de 1.5 segundos
